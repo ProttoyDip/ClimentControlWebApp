@@ -1,0 +1,40 @@
+{
+  "users": {
+    "_id": "ObjectId",
+    "name": "string",
+    "email": "string (unique)",
+    "passwordHash": "string",
+    "role": "admin|user",
+    "createdAt": "ISODate",
+    "updatedAt": "ISODate"
+  },
+  "devices": {
+    "_id": "ObjectId",
+    "ownerUserId": "ObjectId",
+    "name": "string",
+    "serialNumber": "string (unique)",
+    "status": "online|offline",
+    "fanStatus": "on|off",
+    "acStatus": "on|off",
+    "apiKeyHash": "string",
+    "createdAt": "ISODate",
+    "updatedAt": "ISODate"
+  },
+  "sensorData": {
+    "_id": "ObjectId",
+    "deviceId": "ObjectId",
+    "temperature": "number",
+    "humidity": "number",
+    "fanStatus": "on|off",
+    "acStatus": "on|off",
+    "recordedAt": "ISODate"
+  },
+  "logs": {
+    "_id": "ObjectId",
+    "level": "info|warn|error",
+    "source": "string",
+    "message": "string",
+    "metadata": "object",
+    "createdAt": "ISODate"
+  }
+}
