@@ -1,0 +1,77 @@
+version: "3.9"
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: climate-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: climate_control
+      MYSQL_USER: climate_user
+      MYSQL_PASSWORD: climate_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/mysql/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./database/mysql/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  mqtt:
+    image: eclipse-mosquitto:2.0
+    container_name: climate-mqtt
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./docs/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: climate-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 4000
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_USER: climate_user
+      MYSQL_PASSWORD: climate_password
+      MYSQL_DATABASE: climate_control
+      JWT_ACCESS_SECRET: replace_me_access_secret
+      JWT_REFRESH_SECRET: replace_me_refresh_secret
+      SOCKET_CORS_ORIGIN: http://localhost:5173
+      MQTT_ENABLED: "true"
+      MQTT_URL: mqtt://mqtt:1883
+    ports:
+      - "4000:4000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      mqtt:
+        condition: service_started
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: climate-frontend
+    restart: unless-stopped
+    environment:
+      VITE_API_BASE_URL: http://localhost:4000/api
+      VITE_SOCKET_URL: http://localhost:4000
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+volumes:
+  mysql_data:
