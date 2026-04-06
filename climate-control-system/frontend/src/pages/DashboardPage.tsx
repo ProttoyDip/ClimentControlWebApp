@@ -1,72 +1,191 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { DashboardHeader } from "../components/DashboardHeader";
-import { DeviceStatusList } from "../components/DeviceStatusList";
-import { MetricCard } from "../components/MetricCard";
-import { useRealtimeReadings } from "../hooks/useRealtimeReadings";
-import { api } from "../services/api";
-import { Device, SensorReading } from "../types";
+import { useEffect, useMemo, useState } from "react";
+import { Activity, RefreshCw, TriangleAlert } from "lucide-react";
+import { AnimatedItem, AnimatedStagger } from "../components/animations/AnimatedStagger";
+import { ClimateTrendChart } from "../components/charts/ClimateTrendChart";
+import { AlertStack } from "../components/dashboard/AlertStack";
+import { DashboardSkeleton } from "../components/dashboard/DashboardSkeleton";
+import { DeviceControlPanel } from "../components/dashboard/DeviceControlPanel";
+import { EmptyState } from "../components/dashboard/EmptyState";
+import { SettingsPanel } from "../components/dashboard/SettingsPanel";
+import { StatsCards } from "../components/dashboard/StatsCards";
+import { AppShell } from "../components/layout/AppShell";
+import { Topbar } from "../components/layout/Topbar";
+import { Button } from "../components/ui/Button";
+import { GlassCard } from "../components/ui/GlassCard";
+import { useDashboardRealtime } from "../hooks/useDashboardRealtime";
+import { useDashboardStore } from "../store/dashboardStore";
+import { ChartPoint } from "../types";
+import { computeEnergyUsage, formatKwh, formatRelativeClock } from "../utils/format";
 
 export function DashboardPage() {
-  const [devices, setDevices] = useState<Device[]>([]);
-  const [readings, setReadings] = useState<SensorReading[]>([]);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [compactMode, setCompactMode] = useState(false);
+  const [notifications, setNotifications] = useState(true);
 
-  const loadData = useCallback(async () => {
-    const [devicesResponse, readingsResponse] = await Promise.all([
-      api.get("/devices"),
-      api.get("/sensors/latest?limit=30")
-    ]);
+  const {
+    theme,
+    sidebarCollapsed,
+    readings,
+    devices,
+    loading,
+    error,
+    targetTemps,
+    heaterState,
+    setTheme,
+    setSidebarCollapsed,
+    setTargetTemp,
+    setHeaterState
+  } = useDashboardStore((state) => ({
+    theme: state.theme,
+    sidebarCollapsed: state.sidebarCollapsed,
+    readings: state.readings,
+    devices: state.devices,
+    loading: state.loading,
+    error: state.error,
+    targetTemps: state.targetTemps,
+    heaterState: state.heaterState,
+    setTheme: state.setTheme,
+    setSidebarCollapsed: state.setSidebarCollapsed,
+    setTargetTemp: state.setTargetTemp,
+    setHeaterState: state.setHeaterState
+  }));
 
-    setDevices(devicesResponse.data.data);
-    setReadings(readingsResponse.data.data);
-  }, []);
+  const { load, controlDevice } = useDashboardRealtime();
 
   useEffect(() => {
-    loadData().catch(() => {
-      setDevices([]);
-      setReadings([]);
-    });
-  }, [loadData]);
+    const root = document.documentElement;
+    root.setAttribute("data-theme", theme);
+  }, [theme]);
 
-  useRealtimeReadings((reading) => {
-    setReadings((current) => [reading, ...current].slice(0, 30));
-  });
-
-  async function controlDevice(deviceId: number, payload: { fanStatus?: "on" | "off"; acStatus?: "on" | "off" }) {
-    await api.post(`/devices/${deviceId}/control`, payload);
-    await loadData();
-  }
-
-  const averageTemp = useMemo(() => {
-    if (!readings.length) {
-      return "--";
-    }
-    const avg = readings.reduce((sum, item) => sum + item.temperature, 0) / readings.length;
-    return `${avg.toFixed(1)} C`;
+  const latest = readings[0];
+  const avgTemp = useMemo(() => {
+    if (!readings.length) return "--";
+    return `${(readings.reduce((sum, item) => sum + item.temperature, 0) / readings.length).toFixed(1)} C`;
   }, [readings]);
 
-  const averageHumidity = useMemo(() => {
-    if (!readings.length) {
-      return "--";
-    }
-    const avg = readings.reduce((sum, item) => sum + item.humidity, 0) / readings.length;
-    return `${avg.toFixed(1)} %`;
+  const avgHumidity = useMemo(() => {
+    if (!readings.length) return "--";
+    return `${(readings.reduce((sum, item) => sum + item.humidity, 0) / readings.length).toFixed(1)} %`;
   }, [readings]);
 
-  const onlineDevices = devices.filter((device) => device.status === "online").length;
+  const activeDevices = devices.filter((device) => device.status === "online").length;
+  const energyUsage = formatKwh(computeEnergyUsage(latest?.temperature ?? 23, latest?.humidity ?? 52, activeDevices));
+
+  const chartData: ChartPoint[] = useMemo(
+    () =>
+      [...readings]
+        .reverse()
+        .slice(-20)
+        .map((reading) => ({
+          time: formatRelativeClock(reading.recorded_at),
+          temperature: Number(reading.temperature.toFixed(2)),
+          humidity: Number(reading.humidity.toFixed(2))
+        })),
+    [readings]
+  );
 
   return (
-    <main className="dashboard-layout">
-      <DashboardHeader />
-      <section className="metrics-grid">
-        <MetricCard title="Average Temperature" value={averageTemp} subtitle="Live telemetry" />
-        <MetricCard title="Average Humidity" value={averageHumidity} subtitle="Last 30 records" />
-        <MetricCard
-          title="Online Devices"
-          value={`${onlineDevices}/${devices.length || 0}`}
-          subtitle="Connectivity monitor"
+    <>
+      {notifications ? <AlertStack /> : null}
+      <AppShell
+        sidebarCollapsed={sidebarCollapsed}
+        setSidebarCollapsed={setSidebarCollapsed}
+        mobileMenuOpen={mobileMenuOpen}
+        setMobileMenuOpen={setMobileMenuOpen}
+      >
+        <Topbar
+          onOpenMobileMenu={() => setMobileMenuOpen(true)}
+          theme={theme}
+          onToggleTheme={() => setTheme(theme === "dark" ? "light" : "dark")}
         />
-      </section>
-      <DeviceStatusList devices={devices} onControl={controlDevice} />
-    </main>
+
+        {loading ? (
+          <DashboardSkeleton />
+        ) : error ? (
+          <GlassCard className="flex min-h-[280px] items-center justify-center">
+            <div className="text-center">
+              <TriangleAlert size={28} className="mx-auto mb-2 text-red-300" />
+              <h3 className="text-lg font-semibold">Unable to load dashboard</h3>
+              <p className="mt-1 text-sm text-subtle">{error}</p>
+              <Button className="mt-4" onClick={load}>
+                Retry Sync
+              </Button>
+            </div>
+          </GlassCard>
+        ) : (
+          <AnimatedStagger className="space-y-3">
+            <AnimatedItem>
+              <div className={compactMode ? "[&_*]:!py-2" : ""}>
+                <StatsCards
+                  temperature={avgTemp}
+                  humidity={avgHumidity}
+                  energyUsage={energyUsage}
+                  activeDevices={`${activeDevices}/${devices.length}`}
+                />
+              </div>
+            </AnimatedItem>
+
+            <div className="grid gap-3 xl:grid-cols-[1fr_320px]">
+              <AnimatedItem>
+                <GlassCard>
+                  <div className="mb-3 flex items-center justify-between">
+                    <div>
+                      <h3 className="text-base font-semibold">Realtime Climate Trend</h3>
+                      <p className="text-xs text-subtle">Temperature and humidity stream over the latest records</p>
+                    </div>
+                    <Button variant="ghost" className="!p-2" onClick={load}>
+                      <RefreshCw size={15} />
+                    </Button>
+                  </div>
+                  {chartData.length ? (
+                    <ClimateTrendChart data={chartData} />
+                  ) : (
+                    <EmptyState title="No telemetry yet" description="Waiting for sensor packets from connected devices." />
+                  )}
+                </GlassCard>
+              </AnimatedItem>
+
+              <AnimatedItem>
+                <SettingsPanel
+                  compactMode={compactMode}
+                  onCompactMode={setCompactMode}
+                  notifications={notifications}
+                  onNotifications={setNotifications}
+                />
+              </AnimatedItem>
+            </div>
+
+            <AnimatedItem>
+              {devices.length ? (
+                <DeviceControlPanel
+                  devices={devices}
+                  targetTemps={targetTemps}
+                  heaterState={heaterState}
+                  onSetTargetTemp={setTargetTemp}
+                  onSetHeaterState={setHeaterState}
+                  onControlDevice={controlDevice}
+                />
+              ) : (
+                <EmptyState
+                  title="No devices found"
+                  description="Connect a room controller to start controlling HVAC devices in real time."
+                />
+              )}
+            </AnimatedItem>
+
+            {latest ? (
+              <AnimatedItem>
+                <GlassCard className="flex items-center gap-2 py-3">
+                  <Activity size={17} className="text-emerald-300" />
+                  <p className="text-sm text-subtle">
+                    Last update at {formatRelativeClock(latest.recorded_at)} with {latest.temperature.toFixed(1)} C and {latest.humidity.toFixed(1)}% humidity
+                  </p>
+                </GlassCard>
+              </AnimatedItem>
+            ) : null}
+          </AnimatedStagger>
+        )}
+      </AppShell>
+    </>
   );
 }

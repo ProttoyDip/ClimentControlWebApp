@@ -6,15 +6,17 @@ export function notFound(req: Request, res: Response) {
   res.status(404).json({ message: `Route not found: ${req.originalUrl}` });
 }
 
-export function errorHandler(err: Error, _req: Request, res: Response, _next: NextFunction) {
+export function errorHandler(err: Error, req: Request, res: Response, _next: NextFunction) {
   const statusCode = err instanceof ApiError ? err.statusCode : 500;
 
-  logger("error", err.message, {
-    stack: err.stack,
-    statusCode
+  logger("error", err.message || "Unhandled error", {
+    statusCode,
+    method: req.method,
+    path: req.originalUrl,
+    stack: err.stack
   });
 
   res.status(statusCode).json({
-    message: err.message || "Internal server error"
+    message: statusCode === 500 ? "Internal server error" : err.message
   });
 }
