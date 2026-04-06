@@ -13,12 +13,9 @@ CREATE TABLE IF NOT EXISTS devices (
   user_id BIGINT NOT NULL,
   name VARCHAR(150) NOT NULL,
   serial_number VARCHAR(120) NOT NULL UNIQUE,
-  device_type ENUM('ac', 'fan', 'heater') NOT NULL DEFAULT 'ac',
   status ENUM('online', 'offline') NOT NULL DEFAULT 'offline',
-  power_status ENUM('on', 'off') NOT NULL DEFAULT 'off',
   fan_status ENUM('on', 'off') NOT NULL DEFAULT 'off',
   ac_status ENUM('on', 'off') NOT NULL DEFAULT 'off',
-  settings_json JSON NULL,
   api_key_hash VARCHAR(255) NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -39,21 +36,9 @@ CREATE TABLE IF NOT EXISTS sensor_data (
   INDEX idx_sensor_data_recorded_at (recorded_at DESC)
 );
 
-CREATE TABLE IF NOT EXISTS alerts (
-  id BIGINT PRIMARY KEY AUTO_INCREMENT,
-  device_id BIGINT NOT NULL,
-  type ENUM('warning', 'error') NOT NULL,
-  message TEXT NOT NULL,
-  payload_json JSON NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT fk_alerts_devices FOREIGN KEY (device_id) REFERENCES devices(id),
-  INDEX idx_alerts_created_at (created_at DESC),
-  INDEX idx_alerts_device_id (device_id)
-);
-
 CREATE TABLE IF NOT EXISTS logs (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
-  level ENUM('info', 'warning', 'error') NOT NULL,
+  level ENUM('info', 'warn', 'error') NOT NULL,
   source VARCHAR(120) NOT NULL,
   message TEXT NOT NULL,
   metadata JSON NULL,

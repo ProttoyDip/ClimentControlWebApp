@@ -24,11 +24,12 @@ export function startMqttClient() {
   mqttClient.on("message", async (_topic, payloadBuffer) => {
     try {
       const payload = JSON.parse(payloadBuffer.toString()) as {
-        deviceSerial: string;
+        deviceSerial?: string;
+        deviceId?: number;
         temperature: number;
         humidity: number;
-        fanStatus: "on" | "off";
-        acStatus: "on" | "off";
+        fanStatus?: "on" | "off";
+        acStatus?: "on" | "off";
         recordedAt?: string;
       };
 
