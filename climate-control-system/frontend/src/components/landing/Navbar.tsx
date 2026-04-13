@@ -8,10 +8,10 @@ interface NavbarProps {
 }
 
 const navItems = [
-  { to: "/#home", label: "Home" },
-  { to: "/#features", label: "Features" },
-  { to: "/#how-it-works", label: "How It Works" },
-  { to: "/#contact", label: "Contact" }
+  { href: "#home", label: "Home" },
+  { href: "#features", label: "Features" },
+  { href: "#how-it-works", label: "How It Works" },
+  { href: "#contact", label: "Contact" }
 ];
 
 export function Navbar({ primaryCtaTo }: NavbarProps) {
@@ -64,16 +64,16 @@ export function Navbar({ primaryCtaTo }: NavbarProps) {
 
         <div className="hidden items-center gap-1 lg:flex">
           {navItems.map((item) => (
-            <Link
-              key={item.to}
-              to={item.to}
+            <a
+              key={item.href}
+              href={item.href}
               className={`group relative rounded-lg px-4 py-2 text-sm transition-colors ${
                 scrolled ? "text-slate-700 hover:text-slate-950" : "text-subtle hover:text-[color:var(--text)]"
               }`}
             >
               {item.label}
               <span className="absolute inset-x-3 -bottom-0.5 h-px origin-left scale-x-0 bg-cyan-500 transition-transform duration-300 group-hover:scale-x-100" />
-            </Link>
+            </a>
           ))}
         </div>
 
@@ -120,14 +120,14 @@ export function Navbar({ primaryCtaTo }: NavbarProps) {
           </div>
           <div className="space-y-2">
             {navItems.map((item) => (
-              <Link
-                key={item.to}
-                to={item.to}
+              <a
+                key={item.href}
+                href={item.href}
                 onClick={() => setMenuOpen(false)}
                 className={`block rounded-lg px-3 py-2 text-sm transition hover:bg-cyan-400/10 ${scrolled ? "text-slate-800" : "text-[color:var(--text)]"}`}
               >
                 {item.label}
-              </Link>
+              </a>
             ))}
           </div>
           <div className="mt-4 grid grid-cols-2 gap-2">
