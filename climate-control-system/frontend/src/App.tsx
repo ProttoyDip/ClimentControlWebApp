@@ -1,4 +1,4 @@
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useEffect } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import type { AuthUser } from "./types";
@@ -6,6 +6,9 @@ import type { AuthUser } from "./types";
 const AdminPage = lazy(() => import("./pages/AdminPage").then((module) => ({ default: module.AdminPage })));
 const AnalyticsPage = lazy(() =>
   import("./pages/AnalyticsPage").then((module) => ({ default: module.AnalyticsPage }))
+);
+const EnergyPage = lazy(() =>
+  import("./pages/EnergyPage").then((module) => ({ default: module.EnergyPage }))
 );
 const DashboardPage = lazy(() =>
   import("./pages/DashboardPage").then((module) => ({ default: module.DashboardPage }))
@@ -55,6 +58,11 @@ function PublicRoute({ children }: { children: JSX.Element }) {
 }
 
 export default function App() {
+  useEffect(() => {
+    const storedTheme = (localStorage.getItem("theme") || "dark") as "dark" | "light";
+    document.documentElement.setAttribute("data-theme", storedTheme);
+  }, []);
+
   return (
     <Suspense
       fallback={
@@ -111,6 +119,14 @@ export default function App() {
           element={
             <PrivateRoute>
               <AnalyticsPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/energy"
+          element={
+            <PrivateRoute>
+              <EnergyPage />
             </PrivateRoute>
           }
         />

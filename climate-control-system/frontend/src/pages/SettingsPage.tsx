@@ -13,12 +13,12 @@ import { useShallow } from "zustand/react/shallow";
 
 export function SettingsPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { theme, sidebarCollapsed, setTheme, setSidebarCollapsed, targetTemps, setTargetTemp } = useDashboardStore(
+  const { theme, sidebarCollapsed, toggleTheme, setSidebarCollapsed, targetTemps, setTargetTemp } = useDashboardStore(
     useShallow((state) => ({
       theme: state.theme,
       sidebarCollapsed: state.sidebarCollapsed,
       targetTemps: state.targetTemps,
-      setTheme: state.setTheme,
+      toggleTheme: state.toggleTheme,
       setSidebarCollapsed: state.setSidebarCollapsed,
       setTargetTemp: state.setTargetTemp
     }))
@@ -39,7 +39,7 @@ export function SettingsPage() {
       mobileMenuOpen={mobileMenuOpen}
       setMobileMenuOpen={setMobileMenuOpen}
     >
-      <Topbar onOpenMobileMenu={() => setMobileMenuOpen(true)} theme={theme} onToggleTheme={() => setTheme(theme === "dark" ? "light" : "dark")} />
+      <Topbar onOpenMobileMenu={() => setMobileMenuOpen(true)} theme={theme} onToggleTheme={toggleTheme} />
       <AnimatedStagger className="space-y-4">
         <AnimatedItem>
           <GlassCard>
@@ -64,7 +64,7 @@ export function SettingsPage() {
                     <p className="text-sm font-medium">Dark mode</p>
                     <p className="text-xs text-subtle">Persisted across sessions</p>
                   </div>
-                  <Button variant="ghost" className="!p-2" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
+                  <Button variant="ghost" className="!p-2" onClick={toggleTheme}>
                     <SunMedium size={16} />
                   </Button>
                 </div>

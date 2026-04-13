@@ -15,13 +15,13 @@ import { useShallow } from "zustand/react/shallow";
 
 export function AnalyticsPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { theme, sidebarCollapsed, readings, loading, setTheme, setSidebarCollapsed } = useDashboardStore(
+  const { theme, sidebarCollapsed, readings, loading, toggleTheme, setSidebarCollapsed } = useDashboardStore(
     useShallow((state) => ({
       theme: state.theme,
       sidebarCollapsed: state.sidebarCollapsed,
       readings: state.readings,
       loading: state.loading,
-      setTheme: state.setTheme,
+      toggleTheme: state.toggleTheme,
       setSidebarCollapsed: state.setSidebarCollapsed
     }))
   );
@@ -50,7 +50,7 @@ export function AnalyticsPage() {
       mobileMenuOpen={mobileMenuOpen}
       setMobileMenuOpen={setMobileMenuOpen}
     >
-      <Topbar onOpenMobileMenu={() => setMobileMenuOpen(true)} theme={theme} onToggleTheme={() => setTheme(theme === "dark" ? "light" : "dark")} />
+      <Topbar onOpenMobileMenu={() => setMobileMenuOpen(true)} theme={theme} onToggleTheme={toggleTheme} />
       <AnimatedStagger className="space-y-4">
         <AnimatedItem>
           <GlassCard className="overflow-hidden p-0">

@@ -51,6 +51,7 @@ export function DashboardPage() {
     targetTemps,
     heaterState,
     setTheme,
+    toggleTheme,
     setSidebarCollapsed,
     setTargetTemp,
     setHeaterState,
@@ -67,6 +68,7 @@ export function DashboardPage() {
       targetTemps: state.targetTemps,
       heaterState: state.heaterState,
       setTheme: state.setTheme,
+      toggleTheme: state.toggleTheme,
       setSidebarCollapsed: state.setSidebarCollapsed,
       setTargetTemp: state.setTargetTemp,
       setHeaterState: state.setHeaterState,
@@ -129,7 +131,7 @@ export function DashboardPage() {
         <Topbar
           onOpenMobileMenu={() => setMobileMenuOpen(true)}
           theme={theme}
-          onToggleTheme={() => setTheme(theme === "dark" ? "light" : "dark")}
+          onToggleTheme={toggleTheme}
         />
 
         {loading ? (
