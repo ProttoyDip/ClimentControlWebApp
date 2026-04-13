@@ -1,26 +1,55 @@
 import nodemailer from "nodemailer";
+import SMTPTransport from "nodemailer/lib/smtp-transport";
+import dns from "node:dns";
 import { env } from "../config/env";
 import { ApiError } from "../utils/apiError";
 
+dns.setDefaultResultOrder("ipv4first");
+
 let transporter: nodemailer.Transporter | null = null;
+let isPreviewTransport = false;
 
 function getTransporter() {
   if (transporter) {
     return transporter;
   }
 
+  const isDevelopment = env.NODE_ENV !== "production";
+
   if (!env.SMTP_USER || !env.SMTP_PASS) {
+    if (isDevelopment) {
+      transporter = nodemailer.createTransport({ jsonTransport: true });
+      isPreviewTransport = true;
+      console.warn("[mail] SMTP credentials are missing. Using development preview transport.");
+      return transporter;
+    }
+
     throw new ApiError(500, "SMTP is not configured");
   }
 
-  transporter = nodemailer.createTransport({
+  const transportOptions: SMTPTransport.Options = {
     host: env.SMTP_HOST,
     port: env.SMTP_PORT,
     secure: env.SMTP_SECURE,
+    requireTLS: !env.SMTP_SECURE,
+    tls: {
+      minVersion: "TLSv1.2"
+    },
     auth: {
       user: env.SMTP_USER,
       pass: env.SMTP_PASS
     }
+  };
+
+  transporter = nodemailer.createTransport(transportOptions);
+  isPreviewTransport = false;
+
+  console.info("[mail] Using SMTP transport", {
+    host: env.SMTP_HOST,
+    port: env.SMTP_PORT,
+    secure: env.SMTP_SECURE,
+    user: env.SMTP_USER,
+    dnsOrder: "ipv4first"
   });
 
   return transporter;
@@ -51,11 +80,28 @@ export async function sendPasswordResetEmail(args: { toEmail: string; resetUrl: 
   const client = getTransporter();
   const template = buildResetEmailTemplate(args.resetUrl);
 
-  await client.sendMail({
-    from: env.SMTP_FROM,
-    to: args.toEmail,
-    subject: "Reset Your Password",
-    text: template.text,
-    html: template.html
-  });
+  try {
+    await client.sendMail({
+      from: env.SMTP_FROM,
+      to: args.toEmail,
+      subject: "Reset Your Password",
+      text: template.text,
+      html: template.html
+    });
+  } catch (error) {
+    if (isPreviewTransport && env.NODE_ENV !== "production") {
+      console.warn("[mail] Password reset email not sent. Development preview:", {
+        to: args.toEmail,
+        resetUrl: args.resetUrl,
+        error: error instanceof Error ? error.message : String(error)
+      });
+      return;
+    }
+
+    console.error("[mail] Password reset email failed", {
+      to: args.toEmail,
+      error: error instanceof Error ? error.message : String(error)
+    });
+    throw error;
+  }
 }

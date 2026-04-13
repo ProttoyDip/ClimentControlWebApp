@@ -1,6 +1,6 @@
 import { FormEvent, useState } from "react";
 import { Link } from "react-router-dom";
-import { PublicNavbar } from "../components/layout/PublicNavbar";
+import { Navbar } from "../components/landing/Navbar";
 import { Button } from "../components/ui/Button";
 
 export function ContactPage() {
@@ -13,7 +13,7 @@ export function ContactPage() {
 
   return (
     <main className="min-h-screen">
-      <PublicNavbar />
+      <Navbar primaryCtaTo="/register" />
       <div className="mx-auto max-w-3xl space-y-5 px-4 py-12 md:px-6">
         <Link to="/" className="text-sm text-cyan-300">← Back to Home</Link>
         <section className="glass-card rounded-2xl p-6">

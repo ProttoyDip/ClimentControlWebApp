@@ -1,12 +1,15 @@
 import rateLimit from "express-rate-limit";
 import { env } from "../config/env";
 
+const isDevelopment = env.NODE_ENV !== "production";
+
 export const apiRateLimit = rateLimit({
   windowMs: env.API_RATE_LIMIT_WINDOW_MS,
-  max: env.API_RATE_LIMIT_MAX,
+  max: isDevelopment ? Math.max(env.API_RATE_LIMIT_MAX, 1000) : env.API_RATE_LIMIT_MAX,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { message: "Too many requests, please try again later." }
+  message: { message: "Too many requests, please try again later." },
+  skip: (req) => isDevelopment && req.path.startsWith("/api/auth/")
 });
 
 export const iotIngressRateLimit = rateLimit({

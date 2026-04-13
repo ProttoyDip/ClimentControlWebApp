@@ -2,7 +2,7 @@ import { FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight, Eye, EyeOff, ShieldCheck, ThermometerSun, Waves } from "lucide-react";
-import { PublicNavbar } from "../components/layout/PublicNavbar";
+import { Navbar } from "../components/landing/Navbar";
 import { Button } from "../components/ui/Button";
 import { Toast } from "../components/ui/Toast";
 import { useAuth } from "../context/AuthContext";
@@ -34,7 +34,7 @@ export function LoginPage() {
     <main className="relative min-h-screen overflow-hidden">
       {error ? <Toast message={error} tone="error" onClose={() => setError(null)} /> : null}
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,rgba(37,99,235,0.18),transparent_30%),radial-gradient(circle_at_80%_20%,rgba(6,182,212,0.18),transparent_24%),linear-gradient(180deg,rgba(2,6,23,0.3),transparent_48%)]" />
-      <PublicNavbar />
+      <Navbar primaryCtaTo="/register" />
       <div className="grid min-h-[calc(100vh-4rem)] lg:grid-cols-[1.05fr_0.95fr]">
       <section className="flex items-center justify-center p-4 md:p-8">
         <motion.div
