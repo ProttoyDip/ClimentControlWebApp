@@ -28,7 +28,7 @@ deviceRouter.patch(
 deviceRouter.post(
   "/:deviceId/control",
   authenticate,
-  authorize("admin"),
+  authorize("admin", "user"),
   validate(deviceControlSchema),
   control
 );

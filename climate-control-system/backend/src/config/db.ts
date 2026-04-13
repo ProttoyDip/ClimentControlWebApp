@@ -11,7 +11,15 @@ export const pool = mysql.createPool({
 });
 
 export async function checkDatabaseConnection() {
-  const connection = await pool.getConnection();
-  await connection.ping();
-  connection.release();
+  try {
+    const connection = await pool.getConnection();
+    await connection.ping();
+    connection.release();
+  } catch (error) {
+    const details = error as { code?: string; message?: string };
+    const reason = details.message || details.code || "Unknown database connection error";
+    throw new Error(
+      `MySQL connection failed (${env.MYSQL_HOST}:${env.MYSQL_PORT}/${env.MYSQL_DATABASE}) - ${reason}`
+    );
+  }
 }

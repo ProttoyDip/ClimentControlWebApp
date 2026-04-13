@@ -4,6 +4,7 @@ import { createLog } from "../models/log.model";
 import { getLatestReadings, getReadingsByDevice, insertSensorReading } from "../models/sensorData.model";
 import { env } from "../config/env";
 import { ApiError } from "../utils/apiError";
+import { getPredictiveSignals } from "./analytics.service";
 import { emitAlert, emitSensorUpdate } from "./realtime.service";
 
 async function evaluateThresholdAlerts(args: {
@@ -43,6 +44,19 @@ async function evaluateThresholdAlerts(args: {
       deviceId: args.deviceId,
       payload: { humidity: args.humidity, threshold: env.SENSOR_HUMIDITY_ALERT_MIN }
     });
+  }
+
+  if (args.temperature >= env.SENSOR_TEMP_ALERT_MAX - 1) {
+    const prediction = await getPredictiveSignals();
+    if (prediction.forecast?.projectedEnergySpike) {
+      emitAlert({
+        type: "warning",
+        title: "Predictive climate alert",
+        message: prediction.recommendation,
+        deviceId: args.deviceId,
+        payload: prediction.forecast
+      });
+    }
   }
 }
 

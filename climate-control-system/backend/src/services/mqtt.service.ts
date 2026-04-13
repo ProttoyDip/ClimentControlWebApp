@@ -18,7 +18,7 @@ export function startMqttClient() {
 
   mqttClient.on("connect", () => {
     logger("info", "MQTT connected", { broker: env.MQTT_URL });
-    mqttClient?.subscribe("climate/devices/+/telemetry");
+    mqttClient?.subscribe([env.MQTT_SENSOR_TOPIC, "climate/devices/+/telemetry"]);
   });
 
   mqttClient.on("message", async (_topic, payloadBuffer) => {
@@ -43,5 +43,36 @@ export function startMqttClient() {
 
   mqttClient.on("error", (error) => {
     logger("error", "MQTT error", { error: error.message });
+  });
+}
+
+export function publishDeviceControlCommand(payload: {
+  deviceId: number;
+  serialNumber: string;
+  fanStatus: "on" | "off";
+  acStatus: "on" | "off";
+  requestedBy: number;
+}) {
+  if (!mqttClient || !mqttClient.connected) {
+    logger("warn", "MQTT publish skipped because client is disconnected", {
+      serialNumber: payload.serialNumber
+    });
+    return;
+  }
+
+  const topic = `${env.MQTT_DEVICE_CONTROL_TOPIC_PREFIX}/${payload.serialNumber}`;
+  mqttClient.publish(topic, JSON.stringify(payload), { qos: 1, retain: false }, (error) => {
+    if (error) {
+      logger("error", "Failed to publish device control command", {
+        topic,
+        error: error.message
+      });
+      return;
+    }
+
+    logger("info", "Published device control command", {
+      topic,
+      deviceId: payload.deviceId
+    });
   });
 }

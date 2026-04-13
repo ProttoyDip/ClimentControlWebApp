@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { CSSProperties, ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Sidebar } from "./Sidebar";
 import { MobileBottomNav } from "./MobileBottomNav";
@@ -18,9 +18,15 @@ export function AppShell({
   setMobileMenuOpen,
   children
 }: AppShellProps) {
+  const desktopSidebarWidth = sidebarCollapsed ? 88 : 260;
+
   return (
-    <div className="relative min-h-screen p-3 lg:p-4">
-      <div className="mx-auto flex max-w-[1500px] gap-4">
+    <div
+      className="relative min-h-screen overflow-hidden p-3 lg:p-4"
+      style={{ "--sidebar-width": `${desktopSidebarWidth}px` } as CSSProperties}
+    >
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,rgba(6,182,212,0.15),transparent_28%),radial-gradient(circle_at_85%_10%,rgba(37,99,235,0.2),transparent_25%),linear-gradient(180deg,rgba(15,23,42,0.1),transparent_40%)]" />
+      <div className="mx-auto max-w-[1600px] lg:pl-[var(--sidebar-width)]">
         <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
 
         <AnimatePresence>

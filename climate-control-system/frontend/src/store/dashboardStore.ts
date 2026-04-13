@@ -1,7 +1,16 @@
 import { create } from "zustand";
-import { AlertItem, Device, SensorReading } from "../types";
+import { AlertItem, Device, DeviceControlPayload, SensorReading } from "../types";
 
 type ThemeMode = "dark" | "light";
+type ConnectionStatus = "connected" | "connecting" | "disconnected";
+
+interface QueuedCommand {
+  id: string;
+  deviceId: number;
+  payload: DeviceControlPayload;
+  timestamp: number;
+  retries: number;
+}
 
 interface DashboardState {
   theme: ThemeMode;
@@ -13,10 +22,16 @@ interface DashboardState {
   error: string | null;
   targetTemps: Record<number, number>;
   heaterState: Record<number, boolean>;
+  
+  // Real-time connection state
+  connectionStatus: ConnectionStatus;
+  offlineQueue: QueuedCommand[];
+  
   setTheme: (theme: ThemeMode) => void;
   toggleTheme: () => void;
   setSidebarCollapsed: (value: boolean) => void;
   setReadings: (readings: SensorReading[]) => void;
+  addReadingsBatch: (readings: SensorReading[]) => void;
   addReading: (reading: SensorReading) => void;
   setDevices: (devices: Device[]) => void;
   upsertDevice: (device: Device) => void;
@@ -27,12 +42,19 @@ interface DashboardState {
   dismissAlert: (id: string) => void;
   setTargetTemp: (id: number, value: number) => void;
   setHeaterState: (id: number, value: boolean) => void;
+  
+  // Connection & offline queue management
+  setConnectionStatus: (status: ConnectionStatus) => void;
+  queueCommand: (deviceId: number, payload: DeviceControlPayload) => void;
+  getQueuedCommands: () => QueuedCommand[];
+  clearQueuedCommand: (commandId: string) => void;
+  clearOfflineQueue: () => void;
 }
 
 const storedTheme = localStorage.getItem("theme") as ThemeMode | null;
 const initialTheme: ThemeMode = storedTheme ?? "dark";
 
-export const useDashboardStore = create<DashboardState>((set) => ({
+export const useDashboardStore = create<DashboardState>((set, get) => ({
   theme: initialTheme,
   sidebarCollapsed: false,
   readings: [],
@@ -42,6 +64,9 @@ export const useDashboardStore = create<DashboardState>((set) => ({
   error: null,
   targetTemps: {},
   heaterState: {},
+  connectionStatus: "connecting",
+  offlineQueue: [],
+  
   setTheme: (theme) => {
     localStorage.setItem("theme", theme);
     set({ theme });
@@ -54,6 +79,10 @@ export const useDashboardStore = create<DashboardState>((set) => ({
     }),
   setSidebarCollapsed: (sidebarCollapsed) => set({ sidebarCollapsed }),
   setReadings: (readings) => set({ readings }),
+  addReadingsBatch: (readings) =>
+    set((state) => ({
+      readings: [...readings, ...state.readings].slice(0, 48)
+    })),
   addReading: (reading) =>
     set((state) => ({
       readings: [reading, ...state.readings].slice(0, 48)
@@ -116,5 +145,33 @@ export const useDashboardStore = create<DashboardState>((set) => ({
         ...state.heaterState,
         [id]: value
       }
-    }))
+    })),
+    
+  // ========================================================
+  // Connection state management
+  // ========================================================
+  setConnectionStatus: (status) => set({ connectionStatus: status }),
+  
+  queueCommand: (deviceId, payload) => {
+    const command: QueuedCommand = {
+      id: `cmd_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      deviceId,
+      payload,
+      timestamp: Date.now(),
+      retries: 0
+    };
+    set((state) => ({
+      offlineQueue: [...state.offlineQueue, command]
+    }));
+  },
+  
+  getQueuedCommands: () => get().offlineQueue,
+  
+  clearQueuedCommand: (commandId) => {
+    set((state) => ({
+      offlineQueue: state.offlineQueue.filter((cmd) => cmd.id !== commandId)
+    }));
+  },
+  
+  clearOfflineQueue: () => set({ offlineQueue: [] })
 }));

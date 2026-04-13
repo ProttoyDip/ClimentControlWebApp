@@ -8,6 +8,11 @@ VALUES
   (1, 'Main Lobby Controller', 'CCS-LOBBY-001', 'ac', 'online', 'on', 'on', 'off', JSON_OBJECT('targetTemp', 23, 'mode', 'cool')),
   (2, 'Server Room Controller', 'CCS-SRV-009', 'fan', 'online', 'on', 'on', 'off', JSON_OBJECT('fanSpeed', 3));
 
+INSERT INTO device_settings (device_id, target_temperature, humidity_target, mode, fan_speed, auto_control_enabled)
+VALUES
+  (1, 23.0, 45.0, 'cool', 2, TRUE),
+  (2, 22.0, 50.0, 'fan', 3, TRUE);
+
 INSERT INTO sensor_data (device_id, temperature, humidity, fan_status, ac_status, recorded_at)
 VALUES
   (1, 24.30, 55.10, 'on', 'off', TIMESTAMPADD(MINUTE, -15, NOW())),

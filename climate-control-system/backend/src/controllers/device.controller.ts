@@ -33,9 +33,10 @@ export const create = asyncHandler(async (req: AuthenticatedRequest, res: Respon
   res.status(201).json({ message: "Device created", data: device });
 });
 
-export const toggle = asyncHandler(async (req: Request, res: Response) => {
+export const toggle = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
   const deviceId = Number(req.params.id);
-  const updated = await toggleDevicePower(deviceId);
+  const actorUserId = req.user?.id ?? 0;
+  const updated = await toggleDevicePower(deviceId, actorUserId);
   res.status(200).json({ message: "Device toggled", data: updated });
 });
 
@@ -45,8 +46,9 @@ export const settings = asyncHandler(async (req: Request, res: Response) => {
   res.status(200).json({ message: "Device settings updated", data: updated });
 });
 
-export const control = asyncHandler(async (req: Request, res: Response) => {
+export const control = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
   const deviceId = Number(req.params.deviceId);
-  const updated = await controlDevice(deviceId, req.body);
+  const actorUserId = req.user?.id ?? 0;
+  const updated = await controlDevice(deviceId, req.body, actorUserId);
   res.status(200).json({ message: "Device updated", data: updated });
 });

@@ -40,7 +40,12 @@ export function AlertStack() {
               <Icon size={18} className="mt-0.5" />
               <div className="flex-1">
                 <p className="text-sm font-semibold">{alert.title}</p>
-                <p className="text-xs text-subtle">{alert.message}</p>
+                <p
+                  className="text-xs"
+                  style={{ color: "color-mix(in srgb, var(--text) 88%, transparent)" }}
+                >
+                  {alert.message}
+                </p>
               </div>
               <button className="rounded-md p-1 hover:bg-white/10" onClick={() => dismissAlert(alert.id)}>
                 <X size={14} />

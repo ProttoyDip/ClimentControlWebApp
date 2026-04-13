@@ -6,9 +6,33 @@ import {
   PowerStatus,
   updateDeviceState
 } from "../models/device.model";
+import {
+  createDefaultDeviceSettings,
+  updateDeviceClimateSettings,
+  DeviceSettingsInput
+} from "../models/deviceSettings.model";
 import { createLog } from "../models/log.model";
 import { ApiError } from "../utils/apiError";
+import { publishDeviceControlCommand } from "./mqtt.service";
 import { emitDeviceStatus } from "./realtime.service";
+
+function extractClimateSettings(settings?: Record<string, unknown>): DeviceSettingsInput {
+  if (!settings) return {};
+
+  const targetTemperature = typeof settings.targetTemp === "number" ? settings.targetTemp : typeof settings.targetTemperature === "number" ? settings.targetTemperature : undefined;
+  const humidityTarget = typeof settings.humidityTarget === "number" ? settings.humidityTarget : undefined;
+  const mode = typeof settings.mode === "string" ? (settings.mode as DeviceSettingsInput["mode"]) : undefined;
+  const fanSpeed = typeof settings.fanSpeed === "number" ? settings.fanSpeed : undefined;
+  const autoControlEnabled = typeof settings.autoControlEnabled === "boolean" ? settings.autoControlEnabled : undefined;
+
+  return {
+    targetTemperature,
+    humidityTarget,
+    mode,
+    fanSpeed,
+    autoControlEnabled
+  };
+}
 
 export function getDevices() {
   return listDevices();
@@ -31,6 +55,8 @@ export async function createNewDevice(payload: {
     settings: payload.settings
   });
 
+  await createDefaultDeviceSettings(deviceId, extractClimateSettings(payload.settings));
+
   const created = await findDeviceById(deviceId);
 
   await createLog({
@@ -47,7 +73,7 @@ export async function createNewDevice(payload: {
   return created;
 }
 
-export async function toggleDevicePower(deviceId: number) {
+export async function toggleDevicePower(deviceId: number, actorUserId: number) {
   const existingDevice = await findDeviceById(deviceId);
   if (!existingDevice) {
     throw new ApiError(404, "Device not found");
@@ -71,6 +97,13 @@ export async function toggleDevicePower(deviceId: number) {
 
   if (updated) {
     emitDeviceStatus(updated);
+    publishDeviceControlCommand({
+      deviceId: updated.id,
+      serialNumber: updated.serial_number,
+      fanStatus: updated.fan_status,
+      acStatus: updated.ac_status,
+      requestedBy: actorUserId
+    });
   }
 
   return updated;
@@ -92,6 +125,8 @@ export async function updateDeviceSettings(deviceId: number, settings: Record<st
     status: "online"
   });
 
+  await updateDeviceClimateSettings(deviceId, extractClimateSettings(settings));
+
   const updated = await findDeviceById(deviceId);
 
   await createLog({
@@ -110,7 +145,8 @@ export async function updateDeviceSettings(deviceId: number, settings: Record<st
 
 export async function controlDevice(
   deviceId: number,
-  payload: { fanStatus?: "on" | "off"; acStatus?: "on" | "off" }
+  payload: { fanStatus?: "on" | "off"; acStatus?: "on" | "off" },
+  actorUserId: number
 ) {
   const existingDevice = await findDeviceById(deviceId);
   if (!existingDevice) {
@@ -131,6 +167,13 @@ export async function controlDevice(
   const updated = await findDeviceById(deviceId);
   if (updated) {
     emitDeviceStatus(updated);
+    publishDeviceControlCommand({
+      deviceId: updated.id,
+      serialNumber: updated.serial_number,
+      fanStatus: updated.fan_status,
+      acStatus: updated.ac_status,
+      requestedBy: actorUserId
+    });
   }
 
   await createLog({

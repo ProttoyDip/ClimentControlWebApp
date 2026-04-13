@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { motion } from "framer-motion";
 import { Flame, Snowflake, Wind } from "lucide-react";
 import { Device, DeviceControlPayload } from "../../types";
@@ -15,7 +16,7 @@ interface DeviceControlPanelProps {
   onControlDevice: (id: number, payload: DeviceControlPayload) => void;
 }
 
-export function DeviceControlPanel({
+export const DeviceControlPanel = memo(function DeviceControlPanel({
   devices,
   targetTemps,
   heaterState,
@@ -72,4 +73,4 @@ export function DeviceControlPanel({
       ))}
     </section>
   );
-}
+});
