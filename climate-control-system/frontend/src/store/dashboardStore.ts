@@ -68,8 +68,8 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
   offlineQueue: [],
   
   setTheme: (theme) => {
-    localStorage.setItem("theme", theme);
     set({ theme });
+    localStorage.setItem("theme", theme);
   },
   toggleTheme: () =>
     set((state) => {

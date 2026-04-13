@@ -13,8 +13,8 @@ interface SidebarProps {
 const navItems = [
   { id: "dashboard", label: "Dashboard", icon: ThermometerSun, to: "/dashboard" },
   { id: "analytics", label: "Analytics", icon: ActivitySquare, to: "/analytics" },
-  { id: "settings", label: "Settings", icon: Settings, to: "/settings" },
-  { id: "energy", label: "Energy", icon: Zap, to: "/analytics#energy" }
+  { id: "energy", label: "Energy", icon: Zap, to: "/energy" },
+  { id: "settings", label: "Settings", icon: Settings, to: "/settings" }
 ];
 
 export function Sidebar({ collapsed, onToggle, mobile = false }: SidebarProps) {
