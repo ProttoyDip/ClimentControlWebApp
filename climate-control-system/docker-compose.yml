@@ -49,6 +49,14 @@ services:
       JWT_ACCESS_SECRET: replace_me_access_secret
       JWT_REFRESH_SECRET: replace_me_refresh_secret
       SOCKET_CORS_ORIGIN: http://localhost:5173
+      API_CORS_ORIGIN: http://localhost:5173
+      API_RATE_LIMIT_WINDOW_MS: 60000
+      API_RATE_LIMIT_MAX: 180
+      IOT_RATE_LIMIT_WINDOW_MS: 60000
+      IOT_RATE_LIMIT_MAX: 240
+      SENSOR_TEMP_ALERT_MAX: 30
+      SENSOR_HUMIDITY_ALERT_MIN: 35
+      LOG_LEVEL: info
       MQTT_ENABLED: "true"
       MQTT_URL: mqtt://mqtt:1883
     ports:

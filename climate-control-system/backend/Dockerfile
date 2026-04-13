@@ -14,5 +14,11 @@ ENV NODE_ENV=production
 COPY --from=base /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY package*.json ./
+# Copy migration SQL files (required for migrations at runtime)
+COPY database ./database
+# Copy entrypoint script
+COPY entrypoint.sh ./
+RUN chmod +x ./entrypoint.sh
 EXPOSE 4000
-CMD ["node", "dist/server.js"]
+ENTRYPOINT ["./entrypoint.sh"]
+

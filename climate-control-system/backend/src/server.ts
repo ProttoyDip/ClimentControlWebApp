@@ -21,8 +21,11 @@ async function bootstrap() {
 }
 
 bootstrap().catch((error) => {
+  const err = error as { message?: string; code?: string; stack?: string };
   logger("error", "Failed to bootstrap backend", {
-    error: error instanceof Error ? error.message : "Unknown"
+    error: err.message || "Unknown",
+    code: err.code,
+    stack: err.stack
   });
   process.exit(1);
 });

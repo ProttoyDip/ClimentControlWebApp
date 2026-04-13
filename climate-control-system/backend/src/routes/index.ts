@@ -1,4 +1,6 @@
 import { Router } from "express";
+import alertRouter from "./alert.routes";
+import analyticsRouter from "./analytics.routes";
 import authRouter from "./auth.routes";
 import deviceRouter from "./device.routes";
 import sensorRouter from "./sensor.routes";
@@ -12,5 +14,7 @@ apiRouter.get("/health", (_req, res) => {
 apiRouter.use("/auth", authRouter);
 apiRouter.use("/devices", deviceRouter);
 apiRouter.use("/sensors", sensorRouter);
+apiRouter.use("/alerts", alertRouter);
+apiRouter.use("/analytics", analyticsRouter);
 
 export default apiRouter;

@@ -1,8 +1,21 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { createHash, randomBytes } from "node:crypto";
 import { env } from "../config/env";
-import { createUser, findUserByEmail } from "../models/user.model";
+import {
+  clearPasswordResetToken,
+  createUser,
+  findUserByEmail,
+  findUserByValidResetToken,
+  savePasswordResetToken,
+  updateUserPassword
+} from "../models/user.model";
 import { ApiError } from "../utils/apiError";
+import { sendPasswordResetEmail } from "./mail.service";
+
+function hashResetToken(token: string) {
+  return createHash("sha256").update(token).digest("hex");
+}
 
 export async function registerUser(payload: {
   name: string;
@@ -59,4 +72,68 @@ export async function loginUser(payload: { email: string; password: string }) {
       role: user.role
     }
   };
+}
+
+export async function requestPasswordReset(payload: { email: string }) {
+  const user = await findUserByEmail(payload.email);
+  if (!user) {
+    return { message: "If that email exists, a reset link has been sent." };
+  }
+
+  if (user.reset_token_expiry) {
+    const expiryMs = new Date(user.reset_token_expiry).getTime();
+    const remainingMs = expiryMs - Date.now();
+    const cooldownWindowMs =
+      (env.PASSWORD_RESET_TOKEN_TTL_MINUTES * 60 - env.PASSWORD_RESET_COOLDOWN_SECONDS) * 1000;
+
+    if (remainingMs > cooldownWindowMs) {
+      if (env.NODE_ENV !== "production") {
+        console.info("[auth] Password reset request ignored during cooldown", {
+          userId: user.id,
+          email: user.email,
+          cooldownRemainingMs: Math.max(remainingMs - cooldownWindowMs, 0)
+        });
+      }
+
+      return { message: "If that email exists, a reset link has been sent." };
+    }
+  }
+
+  const plainToken = randomBytes(32).toString("hex");
+  const tokenHash = hashResetToken(plainToken);
+  const expiresAt = new Date(Date.now() + env.PASSWORD_RESET_TOKEN_TTL_MINUTES * 60 * 1000);
+
+  await savePasswordResetToken(user.id, tokenHash, expiresAt);
+
+  const resetUrl = `${env.APP_URL}/reset-password/${plainToken}`;
+  try {
+    await sendPasswordResetEmail({ toEmail: user.email, resetUrl });
+  } catch (error) {
+    await clearPasswordResetToken(user.id);
+
+    console.warn("[auth] Reset token cleared after email failure", {
+      userId: user.id,
+      email: user.email,
+      error: error instanceof Error ? error.message : String(error)
+    });
+
+    throw error;
+  }
+
+  return { message: "If that email exists, a reset link has been sent." };
+}
+
+export async function resetPassword(payload: { token: string; password: string }) {
+  const tokenHash = hashResetToken(payload.token);
+  const user = await findUserByValidResetToken(tokenHash);
+
+  if (!user) {
+    throw new ApiError(400, "Invalid or expired reset token");
+  }
+
+  const passwordHash = await bcrypt.hash(payload.password, 12);
+  await updateUserPassword(user.id, passwordHash);
+  await clearPasswordResetToken(user.id);
+
+  return { message: "Password reset successful" };
 }

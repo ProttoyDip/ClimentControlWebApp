@@ -16,6 +16,10 @@ export function validate(schema: ZodTypeAny) {
       });
     }
 
+    req.body = parsed.data.body;
+    req.params = parsed.data.params;
+    req.query = parsed.data.query;
+
     next();
   };
 }

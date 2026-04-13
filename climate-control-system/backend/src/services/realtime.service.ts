@@ -9,17 +9,25 @@ export function setSocketServer(socketServer: SocketIOServer) {
 }
 
 export function emitSensorUpdate(reading: Partial<SensorData>) {
-  if (!io) {
-    return;
-  }
-
+  if (!io) return;
   io.emit("sensor:update", reading);
 }
 
 export function emitDeviceStatus(device: Partial<Device>) {
-  if (!io) {
-    return;
-  }
+  if (!io) return;
+  io.emit("device:update", device);
+}
 
-  io.emit("device:status", device);
+export function emitAlert(event: {
+  type: "warning" | "error";
+  title: string;
+  message: string;
+  deviceId: number;
+  payload?: Record<string, unknown>;
+}) {
+  if (!io) return;
+  io.emit("alert", {
+    ...event,
+    timestamp: new Date().toISOString()
+  });
 }

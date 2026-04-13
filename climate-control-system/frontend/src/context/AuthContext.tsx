@@ -1,5 +1,6 @@
-import { createContext, ReactNode, useContext, useMemo, useState } from "react";
+import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from "react";
 import { api } from "../services/api";
+import { disconnectSocket, setSocketAuthToken } from "../services/socket";
 import { AuthUser } from "../types";
 
 interface AuthContextValue {
@@ -7,20 +8,32 @@ interface AuthContextValue {
   accessToken: string | null;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
+  forgotPassword: (email: string) => Promise<string>;
+  resetPassword: (token: string, password: string) => Promise<string>;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(() => {
+    const raw = localStorage.getItem("authUser");
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw) as AuthUser;
+    } catch {
+      return null;
+    }
+  });
   const [accessToken, setAccessToken] = useState<string | null>(localStorage.getItem("accessToken"));
 
   async function login(email: string, password: string) {
     const { data } = await api.post("/auth/login", { email, password });
     const token = data.data.accessToken as string;
     localStorage.setItem("accessToken", token);
+    localStorage.setItem("authUser", JSON.stringify(data.data.user));
     setAccessToken(token);
+    setSocketAuthToken(token);
     setUser(data.data.user);
   }
 
@@ -28,14 +41,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await api.post("/auth/register", { name, email, password, role: "user" });
   }
 
+  async function forgotPassword(email: string) {
+    const { data } = await api.post("/auth/forgot-password", { email });
+    return (data.message as string) || "If that email exists, a reset link has been sent.";
+  }
+
+  async function resetPassword(token: string, password: string) {
+    const { data } = await api.post("/auth/reset-password", { token, password });
+    return (data.message as string) || "Password reset successful";
+  }
+
   function logout() {
     localStorage.removeItem("accessToken");
+    localStorage.removeItem("authUser");
     setAccessToken(null);
+    setSocketAuthToken(null);
+    disconnectSocket();
     setUser(null);
   }
 
+  useEffect(() => {
+    setSocketAuthToken(accessToken);
+  }, [accessToken]);
+
   const value = useMemo(
-    () => ({ user, accessToken, login, register, logout }),
+    () => ({ user, accessToken, login, register, forgotPassword, resetPassword, logout }),
     [user, accessToken]
   );
 
