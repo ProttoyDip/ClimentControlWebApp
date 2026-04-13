@@ -2,7 +2,7 @@ import { FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight, Eye, EyeOff, ShieldCheck, ThermometerSun, Waves } from "lucide-react";
-import { PublicNavbar } from "../components/layout/PublicNavbar";
+import { Navbar } from "../components/landing/Navbar";
 import { Button } from "../components/ui/Button";
 import { Toast } from "../components/ui/Toast";
 import { useAuth } from "../context/AuthContext";
@@ -35,7 +35,7 @@ export function RegisterPage() {
     <main className="relative min-h-screen overflow-hidden">
       {status ? <Toast message={status} tone={status.includes("failed") ? "error" : "success"} onClose={() => setStatus(null)} /> : null}
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,rgba(6,182,212,0.16),transparent_28%),radial-gradient(circle_at_80%_10%,rgba(37,99,235,0.18),transparent_26%),linear-gradient(180deg,rgba(2,6,23,0.3),transparent_48%)]" />
-      <PublicNavbar />
+      <Navbar primaryCtaTo="/register" />
       <div className="grid min-h-[calc(100vh-4rem)] lg:grid-cols-[0.95fr_1.05fr]">
 
       <section className="hidden items-center justify-center p-8 lg:flex">

@@ -87,7 +87,15 @@ export async function requestPasswordReset(payload: { email: string }) {
       (env.PASSWORD_RESET_TOKEN_TTL_MINUTES * 60 - env.PASSWORD_RESET_COOLDOWN_SECONDS) * 1000;
 
     if (remainingMs > cooldownWindowMs) {
-      throw new ApiError(429, "Please wait before requesting another password reset");
+      if (env.NODE_ENV !== "production") {
+        console.info("[auth] Password reset request ignored during cooldown", {
+          userId: user.id,
+          email: user.email,
+          cooldownRemainingMs: Math.max(remainingMs - cooldownWindowMs, 0)
+        });
+      }
+
+      return { message: "If that email exists, a reset link has been sent." };
     }
   }
 
@@ -98,7 +106,19 @@ export async function requestPasswordReset(payload: { email: string }) {
   await savePasswordResetToken(user.id, tokenHash, expiresAt);
 
   const resetUrl = `${env.APP_URL}/reset-password/${plainToken}`;
-  await sendPasswordResetEmail({ toEmail: user.email, resetUrl });
+  try {
+    await sendPasswordResetEmail({ toEmail: user.email, resetUrl });
+  } catch (error) {
+    await clearPasswordResetToken(user.id);
+
+    console.warn("[auth] Reset token cleared after email failure", {
+      userId: user.id,
+      email: user.email,
+      error: error instanceof Error ? error.message : String(error)
+    });
+
+    throw error;
+  }
 
   return { message: "If that email exists, a reset link has been sent." };
 }

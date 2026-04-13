@@ -9,7 +9,8 @@ export function Button({ className, variant = "primary", children, ...props }: B
   const styles = {
     primary:
       "bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-[0_10px_24px_rgba(6,182,212,0.32)] hover:shadow-[0_14px_32px_rgba(6,182,212,0.45)]",
-    ghost: "bg-transparent border border-white/15 text-slate-200 hover:border-cyan-300/50 hover:bg-cyan-400/10",
+    ghost:
+      "bg-transparent border border-[color:var(--border)] text-[color:var(--text)] hover:border-cyan-300/50 hover:bg-cyan-400/10",
     danger: "bg-gradient-to-r from-red-500 to-rose-500 text-white hover:shadow-[0_14px_28px_rgba(239,68,68,0.4)]"
   } as const;
 
