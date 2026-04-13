@@ -40,6 +40,15 @@ export interface AlertItem {
   timestamp: string;
 }
 
+export interface SocketAlertEvent {
+  type: "warning" | "error";
+  title: string;
+  message: string;
+  deviceId: number;
+  payload?: Record<string, unknown>;
+  timestamp: string;
+}
+
 export interface DeviceControlPayload {
   fanStatus?: PowerState;
   acStatus?: PowerState;

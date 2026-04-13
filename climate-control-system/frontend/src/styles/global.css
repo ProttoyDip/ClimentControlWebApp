@@ -10,7 +10,7 @@
   --border: rgba(148, 163, 184, 0.2);
   --border-strong: rgba(14, 165, 233, 0.35);
   --text: #e2e8f0;
-  --muted: #94a3b8;
+  --muted: #b0bfd1;
   --primary-a: #2563eb;
   --primary-b: #06b6d4;
   --success: #22c55e;
@@ -27,7 +27,7 @@
   --border: rgba(51, 65, 85, 0.15);
   --border-strong: rgba(37, 99, 235, 0.25);
   --text: #0f172a;
-  --muted: #475569;
+  --muted: #334155;
 }
 
 * {
@@ -92,6 +92,22 @@ h4 {
 
   .text-subtle {
     color: var(--muted);
+  }
+
+  .field-input {
+    @apply mt-1 w-full rounded-2xl border px-4 py-3 outline-none transition;
+    border-color: color-mix(in srgb, var(--border) 95%, rgba(255, 255, 255, 0.08));
+    background: color-mix(in srgb, var(--surface-strong) 72%, transparent);
+    color: var(--text);
+  }
+
+  .field-input::placeholder {
+    color: var(--muted);
+  }
+
+  .field-input:focus {
+    border-color: var(--border-strong);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--border-strong) 58%, transparent);
   }
 
   .shimmer {

@@ -1,14 +1,184 @@
 version: "3.9"
 
+# ============================================================
+# PRODUCTION DOCKER COMPOSE CONFIGURATION
+# ============================================================
+# This stack includes MySQL, MQTT, Backend API, and Frontend
+# 
+# USAGE:
+#   docker-compose -f docker-compose.prod.yml up -d
+#
+# REQUIREMENTS:
+#   1. Create .env.production with real production values
+#   2. Configure external secrets manager for sensitive data
+#   3. Set up backup strategy for MySQL database
+#   4. Configure SSL/TLS certificates for HTTPS
+#   5. Use environment variable references, NOT hardcoded secrets
+# ============================================================
+
 services:
+  # ========================================================
+  # MySQL Database Service
+  # ========================================================
+  mysql:
+    image: mysql:8.4
+    container_name: climate-mysql-prod
+    restart: unless-stopped
+    
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    
+    ports:
+      - "3306:3306"
+    
+    volumes:
+      # Persistent data volume (critical for production)
+      - mysql_data_prod:/var/lib/mysql
+      # Initialize schema and seed data on first run
+      - ./database/mysql/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./database/mysql/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    
+    networks:
+      - climate-network
+
+  # ========================================================
+  # MQTT Broker (Eclipse Mosquitto)
+  # ========================================================
+  mqtt:
+    image: eclipse-mosquitto:2.0
+    container_name: climate-mqtt-prod
+    restart: unless-stopped
+    
+    ports:
+      - "1883:1883"      # MQTT protocol
+      - "9001:9001"      # WebSocket (optional)
+    
+    volumes:
+      # Configuration file
+      - ./docs/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      # Persistent data (client state, retained messages)
+      - mqtt_data_prod:/mosquitto/data
+      # Logs directory
+      - mqtt_logs_prod:/mosquitto/log
+    
+    networks:
+      - climate-network
+
+  # ========================================================
+  # Backend API Service
+  # ========================================================
   backend:
-    image: ghcr.io/your-org/climate-backend:latest
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        # Pass build-time environment if needed
+        NODE_ENV: production
+    
+    container_name: climate-backend-prod
+    restart: unless-stopped
+    
     env_file:
-      - .env
+      - .env.production
+    
+    environment:
+      # Override with production-specific variables
+      NODE_ENV: production
+      PORT: 4000
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MQTT_URL: mqtt://mqtt:1883
+    
     ports:
       - "4000:4000"
+    
+    # Wait for dependencies to be healthy
+    depends_on:
+      mysql:
+        condition: service_healthy
+      mqtt:
+        condition: service_started
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    networks:
+      - climate-network
+    
+    # Production-specific volume: persist logs
+    volumes:
+      - backend_logs_prod:/app/logs
 
+  # ========================================================
+  # Frontend (React + Vite) via Nginx
+  # ========================================================
   frontend:
-    image: ghcr.io/your-org/climate-frontend:latest
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${API_URL:-http://localhost:4000/api}
+        VITE_SOCKET_URL: ${API_URL:-http://localhost:4000}
+    
+    container_name: climate-frontend-prod
+    restart: unless-stopped
+    
     ports:
-      - "80:80"
+      - "80:80"      # HTTP
+      - "443:443"    # HTTPS (configure SSL/TLS externally or via reverse proxy)
+    
+    depends_on:
+      - backend
+    
+    networks:
+      - climate-network
+    
+    # Optional: mount logs for debugging
+    volumes:
+      - frontend_logs_prod:/var/log/nginx
+
+# ========================================================
+# Networks
+# ========================================================
+networks:
+  climate-network:
+    driver: bridge
+
+# ========================================================
+# Persistent Volumes (Critical for Production)
+# ========================================================
+volumes:
+  # MySQL data—DO NOT delete unless you want to lose all data
+  mysql_data_prod:
+    driver: local
+  
+  # MQTT persistent data
+  mqtt_data_prod:
+    driver: local
+  
+  # MQTT logs
+  mqtt_logs_prod:
+    driver: local
+  
+  # Backend application logs
+  backend_logs_prod:
+    driver: local
+  
+  # Frontend logs (nginx)
+  frontend_logs_prod:
+    driver: local
+

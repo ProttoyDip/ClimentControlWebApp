@@ -10,7 +10,7 @@ export function Badge({ label, tone = "neutral" }: BadgeProps) {
     online: "bg-emerald-400/12 text-emerald-300 border-emerald-400/25",
     offline: "bg-red-400/12 text-red-300 border-red-400/25",
     warning: "bg-amber-400/12 text-amber-300 border-amber-400/25",
-    neutral: "bg-slate-400/12 text-slate-300 border-slate-400/25"
+    neutral: "bg-slate-300/20 text-slate-100 border-slate-300/35"
   } as const;
 
   return (

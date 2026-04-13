@@ -1,0 +1,69 @@
+# ============================================================
+# Docker Build Context Exclusions
+# ============================================================
+# Excludes files/directories from docker build context
+# to reduce image size and build time
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Node modules (rebuilt in Dockerfile)
+node_modules
+npm-debug.log
+npm-error.log
+yarn-error.log
+package-lock.json
+
+# Environment files (not needed in container; use Docker env vars)
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+
+# IDE/Editor
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+.project
+.classpath
+
+# Build outputs (rebuilt in Dockerfile)
+dist
+build
+.next
+.nuxt
+out
+
+# Testing
+coverage
+jest-results
+__tests__
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.circleci
+.travis.yml
+
+# Documentation
+docs
+
+# Development scripts
+scripts/dev-start.sh
+scripts/prod-build.sh
+
+# Database files (local dev)
+*.sql
+
+# Logs
+logs
+
+# OS
+.DS_Store
+Thumbs.db

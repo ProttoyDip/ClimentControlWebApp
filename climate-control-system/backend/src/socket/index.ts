@@ -5,6 +5,12 @@ import { env } from "../config/env";
 import { setSocketServer } from "../services/realtime.service";
 import { logger } from "../utils/logger";
 
+interface SocketAuthClaims {
+  id: number;
+  email: string;
+  role: "admin" | "user";
+}
+
 export function createSocketServer(httpServer: HttpServer) {
   const io = new SocketIOServer(httpServer, {
     cors: {
@@ -16,11 +22,12 @@ export function createSocketServer(httpServer: HttpServer) {
   io.use((socket, next) => {
     const token = socket.handshake.auth?.token as string | undefined;
     if (!token) {
-      return next();
+      return next(new Error("Missing socket token"));
     }
 
     try {
-      jwt.verify(token, env.JWT_ACCESS_SECRET);
+      const payload = jwt.verify(token, env.JWT_ACCESS_SECRET) as SocketAuthClaims;
+      socket.data.user = payload;
       return next();
     } catch {
       return next(new Error("Invalid socket token"));
@@ -28,10 +35,16 @@ export function createSocketServer(httpServer: HttpServer) {
   });
 
   io.on("connection", (socket) => {
-    logger("info", "Socket client connected", { socketId: socket.id });
+    logger("info", "Socket client connected", {
+      socketId: socket.id,
+      userId: socket.data.user?.id
+    });
 
     socket.on("disconnect", () => {
-      logger("info", "Socket client disconnected", { socketId: socket.id });
+      logger("info", "Socket client disconnected", {
+        socketId: socket.id,
+        userId: socket.data.user?.id
+      });
     });
   });
 

@@ -11,11 +11,13 @@
     "typecheck": "tsc --noEmit",
     "migrate:up": "tsx src/scripts/migrate.ts --direction=up",
     "migrate:down": "tsx src/scripts/migrate.ts --direction=down",
+    "db:init": "tsx src/scripts/initLocalDb.ts",
     "test": "jest --runInBand",
     "test:integration": "jest --runInBand --testPathPatterns=tests/integration"
   },
   "dependencies": {
     "@types/morgan": "^1.9.10",
+    "@types/nodemailer": "^8.0.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
@@ -26,6 +28,7 @@
     "morgan": "^1.10.1",
     "mqtt": "^5.7.0",
     "mysql2": "^3.10.2",
+    "nodemailer": "^8.0.5",
     "socket.io": "^4.7.5",
     "winston": "^3.19.0",
     "zod": "^3.23.8"

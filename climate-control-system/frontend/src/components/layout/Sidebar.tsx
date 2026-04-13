@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
-import { PanelRightOpen, ThermometerSun, Waves, Zap, Settings } from "lucide-react";
+import { ActivitySquare, PanelRightOpen, Settings, ThermometerSun, Waves, Zap } from "lucide-react";
+import { NavLink } from "react-router-dom";
 import { Button } from "../ui/Button";
 import { cn } from "../../utils/cn";
 
@@ -10,10 +11,10 @@ interface SidebarProps {
 }
 
 const navItems = [
-  { id: "overview", label: "Overview", icon: ThermometerSun },
-  { id: "humidity", label: "Humidity", icon: Waves },
-  { id: "energy", label: "Energy", icon: Zap },
-  { id: "settings", label: "Settings", icon: Settings }
+  { id: "dashboard", label: "Dashboard", icon: ThermometerSun, to: "/dashboard" },
+  { id: "analytics", label: "Analytics", icon: ActivitySquare, to: "/analytics" },
+  { id: "settings", label: "Settings", icon: Settings, to: "/settings" },
+  { id: "energy", label: "Energy", icon: Zap, to: "/analytics#energy" }
 ];
 
 export function Sidebar({ collapsed, onToggle, mobile = false }: SidebarProps) {
@@ -22,14 +23,15 @@ export function Sidebar({ collapsed, onToggle, mobile = false }: SidebarProps) {
       animate={{ width: collapsed && !mobile ? 88 : mobile ? 248 : 260 }}
       transition={{ type: "spring", stiffness: 180, damping: 22 }}
       className={cn(
-        "glass-card h-[calc(100vh-2rem)] shrink-0 p-4",
-        mobile ? "flex flex-col" : "hidden lg:flex lg:flex-col"
+        "glass-card shrink-0 overflow-y-auto p-4",
+        mobile ? "flex h-full flex-col" : "hidden lg:fixed lg:left-0 lg:top-0 lg:z-40 lg:flex lg:h-screen lg:flex-col"
       )}
     >
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-8 flex items-center justify-between gap-3">
         <div className={cn("overflow-hidden", collapsed && !mobile && "hidden")}>
-          <p className="text-xs uppercase tracking-[0.2em] text-subtle">Climate SaaS</p>
-          <h1 className="text-lg font-semibold">Control Cloud</h1>
+          <p className="text-xs uppercase tracking-[0.24em] text-subtle">Smart Room</p>
+          <h1 className="text-lg font-semibold">Climate Control</h1>
+          <p className="mt-1 text-xs text-subtle">Premium operations console</p>
         </div>
         <Button variant="ghost" className="!p-2" onClick={onToggle}>
           <PanelRightOpen size={16} />
@@ -38,18 +40,27 @@ export function Sidebar({ collapsed, onToggle, mobile = false }: SidebarProps) {
 
       <nav className="space-y-2">
         {navItems.map((item) => (
-          <button
+          <NavLink
             key={item.id}
-            className="group flex w-full items-center gap-3 rounded-xl border border-transparent px-3 py-2 text-left text-sm text-slate-200 transition-all hover:border-cyan-300/30 hover:bg-cyan-300/10"
+            to={item.to}
+            className={({ isActive }) =>
+              cn(
+                "group flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left text-sm transition-all",
+                isActive
+                  ? "border-cyan-300/40 bg-cyan-300/12 text-[color:var(--text)] shadow-[0_16px_30px_rgba(6,182,212,0.12)]"
+                  : "border-transparent text-subtle hover:border-cyan-300/25 hover:bg-white/5 hover:text-[color:var(--text)]"
+              )
+            }
           >
             <item.icon size={17} className="text-cyan-300" />
             {!collapsed || mobile ? <span>{item.label}</span> : null}
-          </button>
+          </NavLink>
         ))}
       </nav>
 
-      <div className="mt-auto rounded-xl border border-cyan-200/20 bg-cyan-500/10 p-3 text-xs text-subtle">
-        Real-time status stream active
+      <div className="mt-auto rounded-2xl border border-cyan-200/20 bg-gradient-to-br from-cyan-500/10 via-blue-500/10 to-transparent p-3 text-xs text-subtle">
+        <p className="mb-1 font-medium text-[color:var(--text)]">Live telemetry</p>
+        <p>Realtime stream active across climate sensors and device controls.</p>
       </div>
     </motion.aside>
   );
