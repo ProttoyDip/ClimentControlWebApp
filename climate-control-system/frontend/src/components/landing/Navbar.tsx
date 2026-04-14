@@ -8,10 +8,10 @@ interface NavbarProps {
 }
 
 const navItems = [
-  { href: "#home", label: "Home" },
-  { href: "#features", label: "Features" },
-  { href: "#how-it-works", label: "How It Works" },
-  { href: "#contact", label: "Contact" }
+  { href: "/#home", label: "Home" },
+  { href: "/#features", label: "Features" },
+  { href: "/#how-it-works", label: "How It Works" },
+  { href: "/#contact", label: "Contact" }
 ];
 
 export function Navbar({ primaryCtaTo }: NavbarProps) {

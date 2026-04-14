@@ -15,6 +15,17 @@
 
 ---
 
+## Firmware Files
+
+This repo keeps the ESP32 dashboard sketch and its secrets separate:
+
+- [ClimateDeviceLocalDashboard.ino](esp32/ClimateDeviceLocalDashboard.ino) is the sketch with the LCD, time sync, and live temperature/humidity endpoints.
+- [ClimateDevice.ino](esp32/ClimateDevice.ino) is the older MQTT/relay example that still uses device-side telemetry and control topics.
+- [device_config.example.h](esp32/device_config.example.h) is the template for Wi-Fi and device settings.
+- Copy the example file to `device_config.h` in the same folder before flashing.
+
+---
+
 ## Hardware Requirements
 
 ### Microcontroller
@@ -91,7 +102,9 @@
 
 ### GPIO Definitions in Firmware
 
-Current settings in `docs/esp32/ClimateDevice.ino`:
+Current settings in `docs/esp32/ClimateDeviceLocalDashboard.ino`:
+
+The relay pin mapping below applies to the older MQTT/relay example in `docs/esp32/ClimateDevice.ino`. The local dashboard sketch uses the DHT and LCD values from `device_config.h` instead.
 
 ```cpp
 // Sensor
@@ -178,37 +191,46 @@ git clone https://github.com/your-org/climate-control-system.git
 # Or https://github.com/your-org/climate-control-system/archive/main.zip
 
 # Open firmware
-# File → Open → climate-control-system/docs/esp32/ClimateDevice.ino
+# File → Open → climate-control-system/docs/esp32/ClimateDeviceLocalDashboard.ino
 ```
 
 ### 5. Configure Firmware
 
-**Edit the configuration section** at top of `ClimateDevice.ino`:
+Create a local `device_config.h` next to the sketch by copying [device_config.example.h](esp32/device_config.example.h) and filling in your values.
+
+The sketch reads these values from the config file:
 
 ```cpp
-// WiFi Credentials (CHANGE THESE)
-const char *WIFI_SSID = "YOUR_WIFI_SSID";
-const char *WIFI_PASS = "YOUR_WIFI_PASSWORD";
-
-// Device Identity
-const char *DEVICE_SERIAL = "ESP32-ROOM-01";  // Unique per device
-const char *DEVICE_API_KEY = "your-device-key-here";
-
-// Backend & MQTT Server
-const char *API_BASE_URL = "http://your-backend-host:4000/api";
-const char *MQTT_HOST = "your-mqtt-host";
-const int MQTT_PORT = 1883;
-const char *MQTT_USER = "mqtt-user";
-const char *MQTT_PASS = "mqtt-pass";
+#define DEVICE_WIFI_SSID "YOUR_WIFI_SSID"
+#define DEVICE_WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
+#define DEVICE_LOCATION "Dhaka, Bangladesh"
+#define DEVICE_SERIAL "ESP32-ROOM-01"
+#define DEVICE_API_KEY "replace_with_backend_device_key"
+#define DEVICE_API_BASE_URL "http://192.168.0.103:4000/api"
+#define DEVICE_TELEMETRY_INTERVAL_MS 10000
+#define DEVICE_NTP_SERVER "pool.ntp.org"
+#define DEVICE_GMT_OFFSET_SEC 21600
+#define DEVICE_DAYLIGHT_OFFSET_SEC 0
+#define DEVICE_DHT_PIN 27
+#define DEVICE_DHT_TYPE DHT22
+#define DEVICE_LCD_ADDRESS 0x27
 ```
 
 **Where to get these values:**
 
-- **WIFI_SSID/PASS**: Your home or office WiFi
-- **DEVICE_SERIAL**: Unique identifier (e.g., `ESP32-LIVINGROOM-01`)
-- **DEVICE_API_KEY**: Generate in backend: `node -e "console.log(require('crypto').randomBytes(16).toString('hex'))"`
-- **API_BASE_URL**: Backend server (e.g., `https://api.yourapp.com/api` for production)
-- **MQTT_HOST/USER/PASS**: From MQTT broker (HiveMQ Cloud, local Mosquitto, etc.)
+- **DEVICE_WIFI_SSID / DEVICE_WIFI_PASSWORD**: Your home or office WiFi
+- **DEVICE_LOCATION**: Friendly label shown on the dashboard card
+- **DEVICE_SERIAL**: Must match a device serial in your backend database
+- **DEVICE_API_KEY**: Must be included in backend `DEVICE_API_KEYS`
+- **DEVICE_API_BASE_URL**: Backend API base URL reachable from ESP32, usually `http://<your-pc-ip>:4000/api`
+- **DEVICE_TELEMETRY_INTERVAL_MS**: Frequency for posting readings to backend, e.g. `10000`
+- **DEVICE_NTP_SERVER**: Usually `pool.ntp.org`
+- **DEVICE_GMT_OFFSET_SEC**: Your local UTC offset in seconds
+- **DEVICE_DAYLIGHT_OFFSET_SEC**: `0` unless daylight saving applies
+- **DEVICE_DHT_PIN**: GPIO connected to the DHT22 sensor
+- **DEVICE_LCD_ADDRESS**: I2C address for the display, often `0x27`
+
+Keep `device_config.h` out of version control if it contains real secrets.
 
 ### 6. Connect ESP32 via USB
 
@@ -243,14 +265,8 @@ If stuck:
 After upload, open **Tools → Serial Monitor** (115200 baud):
 
 ```
-[WIFI] Connecting to 'MyNetwork'...
 [WIFI] Connected! IP: 192.168.1.100
-[DHT22] Initialized on pin 4
-[GPIO] Relays initialized (all OFF)
-[MQTT] Connecting to mqtt.server:1883...
-[MQTT] Connected! Subscribed to climate/device/control/ESP32-ROOM-01
-[TELEMETRY] Sending: temperature=22.5°C, humidity=45%
-[HTTP] POST /sensors/data → 202 Accepted
+Web Server Ready!
 ```
 
 ---
@@ -281,6 +297,8 @@ float humidity = dht.readHumidity() - 2.0;         // Subtract 2% offset
 ```
 
 ### MQTT Topics
+
+This section applies to the MQTT-based relay sketch in `docs/esp32/ClimateDevice.ino`.
 
 By default, the device:
 - **Subscribes to**: `climate/device/control/{DEVICE_SERIAL}` for AC/Fan commands

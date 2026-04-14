@@ -32,6 +32,9 @@ const ResetPasswordPage = lazy(() =>
 const SettingsPage = lazy(() =>
   import("./pages/SettingsPage").then((module) => ({ default: module.SettingsPage }))
 );
+const NotificationsPage = lazy(() =>
+  import("./pages/NotificationsPage").then((module) => ({ default: module.NotificationsPage }))
+);
 
 function PrivateRoute({ children }: { children: JSX.Element }) {
   const { accessToken } = useAuth();
@@ -135,6 +138,14 @@ export default function App() {
           element={
             <PrivateRoute>
               <SettingsPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/notifications"
+          element={
+            <PrivateRoute>
+              <NotificationsPage />
             </PrivateRoute>
           }
         />

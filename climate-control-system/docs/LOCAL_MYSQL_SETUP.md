@@ -15,6 +15,21 @@ Edit `backend/.env`:
 - `MYSQL_USER=<your_mysql_user>`
 - `MYSQL_PASSWORD=<your_mysql_password>`
 - `MYSQL_DATABASE=climate_control`
+- `MQTT_ENABLED=true` if you want ESP32 telemetry to flow through the broker
+- `MQTT_URL=mqtt://localhost:1883` for the local broker
+- `MQTT_USERNAME` and `MQTT_PASSWORD` if your broker requires auth
+- `MQTT_SENSOR_TOPIC=climate/sensor/data`
+- `MQTT_DEVICE_CONTROL_TOPIC_PREFIX=climate/device/control`
+- `DEVICE_API_KEYS=<comma-separated-device-keys>` matching your ESP32 `device_config.h`
+- `DEVICE_POLLER_ENABLED=true` if you want backend to pull values from device endpoints
+- `DEVICE_POLLER_BASE_URL=http://192.168.0.103` (no trailing slash)
+- `DEVICE_POLLER_DEVICE_SERIAL=ESP32-ROOM-01` (must exist in backend devices table)
+- `DEVICE_POLLER_INTERVAL_MS=3000` (allowed range: 2000-5000 ms)
+- `DEVICE_POLLER_FAN_STATUS=off` and `DEVICE_POLLER_AC_STATUS=off` defaults for poll-ingested rows
+
+If you are using the firmware sketch from [docs/esp32/ClimateDeviceLocalDashboard.ino](esp32/ClimateDeviceLocalDashboard.ino), the device key is only needed when you later switch to the HTTP ingest path or deploy the older MQTT/relay sketch.
+
+When poller mode is enabled, backend reads from `DEVICE_POLLER_BASE_URL/temp` and `DEVICE_POLLER_BASE_URL/hum` on the configured interval and ingests those values for `DEVICE_POLLER_DEVICE_SERIAL`.
 
 ## 3) Initialize schema + seed data
 
@@ -41,6 +56,15 @@ npm --prefix backend run dev
 npm --prefix frontend run dev
 ```
 
+## 6) Register Device Credentials
+
+For device ingest, add the same API key value to both places:
+
+- `backend/.env` under `DEVICE_API_KEYS`
+- the ESP32 local `device_config.h` file used by your firmware
+
+If you do not want to use device ingest yet, you can leave `DEVICE_API_KEYS` empty and run only the local dashboard sketch.
+
 ## Troubleshooting
 
 - If you see `Host 'localhost' is not allowed to connect`, your server is not accepting that user/host combination.
@@ -60,3 +84,5 @@ FLUSH PRIVILEGES;
 ```
 
 Then set the same credentials in `backend/.env`.
+
+- If the backend returns `Device authentication not configured`, set `DEVICE_API_KEYS` in `backend/.env` and restart the backend.

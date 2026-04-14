@@ -2,6 +2,7 @@ import { createServer } from "node:http";
 import { createApp } from "./app";
 import { checkDatabaseConnection } from "./config/db";
 import { env } from "./config/env";
+import { startDevicePoller } from "./services/devicePoller.service";
 import { startMqttClient } from "./services/mqtt.service";
 import { createSocketServer } from "./socket";
 import { logger } from "./utils/logger";
@@ -14,6 +15,7 @@ async function bootstrap() {
 
   createSocketServer(httpServer);
   startMqttClient();
+  startDevicePoller();
 
   httpServer.listen(env.PORT, () => {
     logger("info", `Backend started on port ${env.PORT}`);

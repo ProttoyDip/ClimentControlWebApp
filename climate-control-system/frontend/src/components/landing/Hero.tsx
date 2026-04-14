@@ -5,9 +5,14 @@ import { Button } from "../ui/Button";
 
 interface HeroProps {
   primaryCtaTo: string;
+  telemetry: {
+    temperature: number | null;
+    humidity: number | null;
+    live: boolean;
+  };
 }
 
-export function Hero({ primaryCtaTo }: HeroProps) {
+export function Hero({ primaryCtaTo, telemetry }: HeroProps) {
   return (
     <section id="home" className="relative mx-auto grid w-full max-w-7xl gap-10 px-4 pb-20 pt-16 md:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:pt-20">
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_20%_0%,rgba(56,189,248,0.18),transparent_26%),radial-gradient(circle_at_85%_15%,rgba(99,102,241,0.2),transparent_30%)]" />
@@ -57,19 +62,25 @@ export function Hero({ primaryCtaTo }: HeroProps) {
         >
           <div className="mb-5 flex items-center justify-between">
             <p className="text-sm font-medium">Climate Command Center</p>
-            <span className="rounded-full bg-emerald-400/15 px-3 py-1 text-xs text-emerald-300">Live</span>
+            <span className="rounded-full bg-emerald-400/15 px-3 py-1 text-xs text-emerald-300">
+              {telemetry.live ? "Live" : "Preview"}
+            </span>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
               <p className="text-xs text-subtle">Temperature</p>
-              <p className="mt-2 text-3xl font-semibold">22.8°C</p>
-              <p className="text-xs text-cyan-300">Stable zone</p>
+              <p className="mt-2 text-3xl font-semibold">
+                {typeof telemetry.temperature === "number" ? `${telemetry.temperature.toFixed(1)}°C` : "--"}
+              </p>
+              <p className="text-xs text-cyan-300">{telemetry.live ? "Live sensor" : "Connect backend"}</p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
               <p className="text-xs text-subtle">Humidity</p>
-              <p className="mt-2 text-3xl font-semibold">46%</p>
-              <p className="text-xs text-cyan-300">Balanced</p>
+              <p className="mt-2 text-3xl font-semibold">
+                {typeof telemetry.humidity === "number" ? `${telemetry.humidity.toFixed(1)}%` : "--"}
+              </p>
+              <p className="text-xs text-cyan-300">{telemetry.live ? "Live sensor" : "Connect backend"}</p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4 sm:col-span-2">
               <p className="text-xs text-subtle">Automation Policy</p>

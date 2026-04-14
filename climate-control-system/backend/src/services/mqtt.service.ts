@@ -5,6 +5,11 @@ import { ingestSensorData } from "./sensor.service";
 
 let mqttClient: mqtt.MqttClient | null = null;
 
+function extractLegacyTelemetrySerial(topic: string) {
+  const match = topic.match(/^climate\/devices\/([^/]+)\/telemetry$/);
+  return match?.[1];
+}
+
 export function startMqttClient() {
   if (!env.MQTT_ENABLED) {
     logger("info", "MQTT integration disabled by environment");
@@ -21,7 +26,7 @@ export function startMqttClient() {
     mqttClient?.subscribe([env.MQTT_SENSOR_TOPIC, "climate/devices/+/telemetry"]);
   });
 
-  mqttClient.on("message", async (_topic, payloadBuffer) => {
+  mqttClient.on("message", async (topic, payloadBuffer) => {
     try {
       const payload = JSON.parse(payloadBuffer.toString()) as {
         deviceSerial?: string;
@@ -33,9 +38,17 @@ export function startMqttClient() {
         recordedAt?: string;
       };
 
+      if (!payload.deviceSerial) {
+        const legacySerial = extractLegacyTelemetrySerial(topic);
+        if (legacySerial) {
+          payload.deviceSerial = legacySerial;
+        }
+      }
+
       await ingestSensorData(payload);
     } catch (error) {
       logger("error", "MQTT message processing failed", {
+        topic,
         error: error instanceof Error ? error.message : "Unknown error"
       });
     }
@@ -61,18 +74,23 @@ export function publishDeviceControlCommand(payload: {
   }
 
   const topic = `${env.MQTT_DEVICE_CONTROL_TOPIC_PREFIX}/${payload.serialNumber}`;
-  mqttClient.publish(topic, JSON.stringify(payload), { qos: 1, retain: false }, (error) => {
-    if (error) {
-      logger("error", "Failed to publish device control command", {
-        topic,
-        error: error.message
-      });
-      return;
-    }
+  const legacyTopic = `climate/devices/${payload.serialNumber}/commands`;
+  const payloadBody = JSON.stringify(payload);
 
-    logger("info", "Published device control command", {
-      topic,
-      deviceId: payload.deviceId
+  for (const currentTopic of [topic, legacyTopic]) {
+    mqttClient.publish(currentTopic, payloadBody, { qos: 1, retain: false }, (error) => {
+      if (error) {
+        logger("error", "Failed to publish device control command", {
+          topic: currentTopic,
+          error: error.message
+        });
+        return;
+      }
+
+      logger("info", "Published device control command", {
+        topic: currentTopic,
+        deviceId: payload.deviceId
+      });
     });
-  });
+  }
 }
