@@ -1,3 +1,4 @@
+// Kept existing Device type
 export interface Device {
   id: number;
   name: string;
@@ -7,6 +8,7 @@ export interface Device {
   ac_status: "on" | "off";
 }
 
+// Kept existing SensorReading
 export interface SensorReading {
   id: number;
   device_id: number;
