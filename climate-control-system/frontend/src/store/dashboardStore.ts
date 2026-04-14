@@ -14,6 +14,7 @@ interface QueuedCommand {
 
 interface DashboardState {
   theme: ThemeMode;
+  notificationsEnabled: boolean;
   sidebarCollapsed: boolean;
   readings: SensorReading[];
   devices: Device[];
@@ -29,6 +30,7 @@ interface DashboardState {
   
   setTheme: (theme: ThemeMode) => void;
   toggleTheme: () => void;
+  setNotificationsEnabled: (enabled: boolean) => void;
   setSidebarCollapsed: (value: boolean) => void;
   setReadings: (readings: SensorReading[]) => void;
   addReadingsBatch: (readings: SensorReading[]) => void;
@@ -53,9 +55,12 @@ interface DashboardState {
 
 const storedTheme = localStorage.getItem("theme") as ThemeMode | null;
 const initialTheme: ThemeMode = storedTheme ?? "dark";
+const storedNotificationsEnabled = localStorage.getItem("notificationsEnabled");
+const initialNotificationsEnabled = storedNotificationsEnabled === null ? false : storedNotificationsEnabled === "true";
 
 export const useDashboardStore = create<DashboardState>((set, get) => ({
   theme: initialTheme,
+  notificationsEnabled: initialNotificationsEnabled,
   sidebarCollapsed: false,
   readings: [],
   devices: [],
@@ -77,6 +82,10 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
       localStorage.setItem("theme", theme);
       return { theme };
     }),
+  setNotificationsEnabled: (enabled) => {
+    set({ notificationsEnabled: enabled });
+    localStorage.setItem("notificationsEnabled", String(enabled));
+  },
   setSidebarCollapsed: (sidebarCollapsed) => set({ sidebarCollapsed }),
   setReadings: (readings) => set({ readings }),
   addReadingsBatch: (readings) =>

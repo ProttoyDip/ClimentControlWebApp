@@ -15,7 +15,8 @@ jest.mock("../../src/models/device.model", () => ({
 jest.mock("../../src/models/sensorData.model", () => ({
   insertSensorReading: jest.fn(),
   getLatestReadings: jest.fn(),
-  getReadingsByDevice: jest.fn()
+  getReadingsByDevice: jest.fn(),
+  getReadingsSince: jest.fn()
 }));
 
 jest.mock("../../src/models/log.model", () => ({
@@ -36,6 +37,8 @@ const findDeviceBySerialMock = deviceModel.findDeviceBySerial as unknown as jest
 const updateDeviceStateMock = deviceModel.updateDeviceState as unknown as jest.Mock;
 const insertSensorReadingMock = sensorDataModel.insertSensorReading as unknown as jest.Mock;
 const getLatestReadingsMock = sensorDataModel.getLatestReadings as unknown as jest.Mock;
+const getReadingsByDeviceMock = sensorDataModel.getReadingsByDevice as unknown as jest.Mock;
+const getReadingsSinceMock = sensorDataModel.getReadingsSince as unknown as jest.Mock;
 const createAlertMock = alertModel.createAlert as unknown as jest.Mock;
 const emitAlertMock = realtimeService.emitAlert as unknown as jest.Mock;
 
@@ -45,6 +48,7 @@ describe("Sensor integration", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    getReadingsSinceMock.mockResolvedValue([]);
   });
 
   it("ingests sensor data and emits threshold alerts", async () => {
@@ -70,7 +74,7 @@ describe("Sensor integration", () => {
       humidity: 30.2,
       fanStatus: "on",
       acStatus: "on"
-    });
+    }).set("x-device-key", "replace_me_device_key_1");
 
     expect(response.status).toBe(202);
     expect(response.body.data).toEqual({ readingId: 2001, deviceId: 11 });
@@ -98,5 +102,53 @@ describe("Sensor integration", () => {
 
     expect(response.status).toBe(200);
     expect(response.body.data).toHaveLength(1);
+  });
+
+  it("returns last ingest status for device serial", async () => {
+    findDeviceBySerialMock.mockResolvedValueOnce({
+      id: 11,
+      user_id: 1,
+      name: "Main Controller",
+      serial_number: "CCS-LOBBY-001",
+      device_type: "ac",
+      status: "online",
+      power_status: "on",
+      fan_status: "on",
+      ac_status: "on",
+      settings_json: "{}",
+      settings: {}
+    });
+
+    getReadingsByDeviceMock.mockResolvedValueOnce([
+      {
+        id: 1,
+        device_id: 11,
+        temperature: 28.4,
+        humidity: 63.2,
+        fan_status: "on",
+        ac_status: "off",
+        recorded_at: new Date(Date.now() - 15000).toISOString()
+      }
+    ]);
+
+    const response = await request(app)
+      .get("/api/sensors/status/CCS-LOBBY-001")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.data).toEqual(
+      expect.objectContaining({
+        deviceId: 11,
+        deviceSerial: "CCS-LOBBY-001",
+        hasIngest: true,
+        lastIngest: expect.objectContaining({
+          temperature: 28.4,
+          humidity: 63.2,
+          fanStatus: "on",
+          acStatus: "off"
+        })
+      })
+    );
+    expect(typeof response.body.data.secondsSinceLastIngest).toBe("number");
   });
 });

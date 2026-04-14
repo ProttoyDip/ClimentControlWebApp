@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { api } from "../services/api";
 import { disconnectSocket, setSocketAuthToken } from "../services/socket";
 import { AuthUser } from "../types";
@@ -51,18 +51,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return (data.message as string) || "Password reset successful";
   }
 
-  function logout() {
+  const logout = useCallback(() => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("authUser");
     setAccessToken(null);
     setSocketAuthToken(null);
     disconnectSocket();
     setUser(null);
-  }
+  }, []);
 
   useEffect(() => {
     setSocketAuthToken(accessToken);
   }, [accessToken]);
+
+  useEffect(() => {
+    const onUnauthorized = () => {
+      logout();
+    };
+
+    window.addEventListener("auth:unauthorized", onUnauthorized);
+    return () => {
+      window.removeEventListener("auth:unauthorized", onUnauthorized);
+    };
+  }, [logout]);
 
   const value = useMemo(
     () => ({ user, accessToken, login, register, forgotPassword, resetPassword, logout }),

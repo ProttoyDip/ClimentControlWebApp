@@ -1,19 +1,17 @@
 import { motion } from "framer-motion";
 import { Activity, Thermometer, Waves } from "lucide-react";
-import { useEffect, useState } from "react";
+import { formatRelativeClock } from "../../utils/format";
 
-export function LivePreview() {
-  const [temperature, setTemperature] = useState(22.8);
-  const [humidity, setHumidity] = useState(46);
+interface LivePreviewProps {
+  telemetry: {
+    temperature: number | null;
+    humidity: number | null;
+    updatedAt: string | null;
+    live: boolean;
+  };
+}
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTemperature((value) => Number((value + (Math.random() - 0.5) * 0.6).toFixed(1)));
-      setHumidity((value) => Number((value + (Math.random() - 0.5) * 1.2).toFixed(1)));
-    }, 1800);
-
-    return () => clearInterval(interval);
-  }, []);
+export function LivePreview({ telemetry }: LivePreviewProps) {
 
   return (
     <section className="mx-auto w-full max-w-7xl px-4 py-16 md:px-8">
@@ -40,7 +38,7 @@ export function LivePreview() {
             <p className="text-sm font-semibold">Operations Snapshot</p>
             <span className="inline-flex items-center gap-1 rounded-full bg-emerald-400/15 px-3 py-1 text-xs text-emerald-300">
               <Activity size={12} />
-              Active
+              {telemetry.live ? "Live" : "Preview"}
             </span>
           </div>
 
@@ -49,14 +47,14 @@ export function LivePreview() {
               <p className="text-xs text-subtle">Room Temperature</p>
               <p className="mt-2 inline-flex items-center gap-2 text-3xl font-semibold">
                 <Thermometer size={18} className="text-cyan-300" />
-                {temperature.toFixed(1)}°C
+                {typeof telemetry.temperature === "number" ? `${telemetry.temperature.toFixed(1)}°C` : "--"}
               </p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
               <p className="text-xs text-subtle">Humidity</p>
               <p className="mt-2 inline-flex items-center gap-2 text-3xl font-semibold">
                 <Waves size={18} className="text-cyan-300" />
-                {humidity.toFixed(1)}%
+                {typeof telemetry.humidity === "number" ? `${telemetry.humidity.toFixed(1)}%` : "--"}
               </p>
             </div>
           </div>
@@ -82,8 +80,14 @@ export function LivePreview() {
         >
           <p className="text-sm font-semibold">Live Device Timeline</p>
           <div className="mt-4 space-y-3">
-            {["Sensor stream synchronized", "Predictive cooling engaged", "AC policy optimized"].map((item, index) => (
-              <div key={item} className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-subtle">
+            {[
+              telemetry.live
+                ? `Latest sensor packet ${telemetry.updatedAt ? formatRelativeClock(telemetry.updatedAt) : "just now"}`
+                : "Live sensor feed unavailable",
+              telemetry.live ? "Dashboard stream synchronized" : "Sign in to view protected telemetry",
+              telemetry.live ? "Realtime updates running" : "Connect backend API and socket"
+            ].map((item, index) => (
+              <div key={`${item}-${index}`} className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-subtle">
                 <span className="h-2 w-2 rounded-full bg-cyan-300" />
                 <span>{item}</span>
                 <span className="ml-auto text-xs text-cyan-200">+{index + 1}m</span>

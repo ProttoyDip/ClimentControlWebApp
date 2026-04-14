@@ -1,5 +1,5 @@
 import { Menu, MoonStar, SunMedium, LogOut, Bell, CircleUserRound } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { Button } from "../ui/Button";
 
@@ -11,6 +11,7 @@ interface TopbarProps {
 
 export function Topbar({ onOpenMobileMenu, theme, onToggleTheme }: TopbarProps) {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const lightModeActionClass =
     theme === "light"
       ? "!text-blue-600 hover:!text-blue-700 hover:!bg-blue-100/70"
@@ -28,7 +29,11 @@ export function Topbar({ onOpenMobileMenu, theme, onToggleTheme }: TopbarProps) 
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <Button variant="ghost" className={`hidden !p-2 sm:inline-flex ${lightModeActionClass}`}>
+        <Button
+          variant="ghost"
+          className={`hidden !p-2 sm:inline-flex ${lightModeActionClass}`}
+          onClick={() => navigate("/notifications")}
+        >
           <Bell size={16} />
         </Button>
         <Button variant="ghost" className={`!p-2 ${lightModeActionClass}`} onClick={onToggleTheme}>

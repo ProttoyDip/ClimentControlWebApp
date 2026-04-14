@@ -72,7 +72,14 @@ const envSchema = z.object({
   MQTT_USERNAME: z.string().optional(),
   MQTT_PASSWORD: z.string().optional(),
 
-  DEVICE_API_KEYS: z.string().default("")
+  DEVICE_API_KEYS: z.string().default(""),
+
+  DEVICE_POLLER_ENABLED: z.preprocess((value) => parseBoolean(value, false), z.boolean()).default(false),
+  DEVICE_POLLER_BASE_URL: z.string().trim().default(""),
+  DEVICE_POLLER_DEVICE_SERIAL: z.string().trim().default(""),
+  DEVICE_POLLER_INTERVAL_MS: z.coerce.number().min(2000).max(5000).default(3000),
+  DEVICE_POLLER_FAN_STATUS: z.enum(["on", "off"]).default("off"),
+  DEVICE_POLLER_AC_STATUS: z.enum(["on", "off"]).default("off")
 });
 
 const parsed = envSchema.safeParse(process.env);
