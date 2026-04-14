@@ -13,6 +13,12 @@ let currentToken = localStorage.getItem("accessToken");
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:4000";
 
+function notifyUnauthorizedSession() {
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("authUser");
+  window.dispatchEvent(new CustomEvent("auth:unauthorized"));
+}
+
 export function getSocket(): Socket<ServerEvents> {
   if (socket) {
     return socket;
@@ -33,6 +39,10 @@ export function getSocket(): Socket<ServerEvents> {
 
   socket.on("connect_error", (error) => {
     console.error("[socket] connect_error", error.message);
+    if (error.message.toLowerCase().includes("invalid socket token")) {
+      notifyUnauthorizedSession();
+      socket?.disconnect();
+    }
   });
 
   socket.io.on("reconnect", (attempt) => {

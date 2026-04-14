@@ -133,3 +133,41 @@ export function fetchLatestReadings(limit?: number) {
 export function fetchReadingsByDevice(deviceId: number, limit?: number) {
   return getReadingsByDevice(deviceId, limit || 200);
 }
+
+export async function fetchLastIngestStatusBySerial(deviceSerial: string) {
+  const device = await findDeviceBySerial(deviceSerial);
+
+  if (!device) {
+    throw new ApiError(404, "Device not found");
+  }
+
+  const readings = await getReadingsByDevice(device.id, 1);
+  const latestReading = readings[0] || null;
+
+  if (!latestReading) {
+    return {
+      deviceId: device.id,
+      deviceSerial: device.serial_number,
+      hasIngest: false,
+      lastIngest: null,
+      secondsSinceLastIngest: null
+    };
+  }
+
+  const lastIngestDate = new Date(latestReading.recorded_at);
+  const secondsSinceLastIngest = Math.max(0, Math.floor((Date.now() - lastIngestDate.getTime()) / 1000));
+
+  return {
+    deviceId: device.id,
+    deviceSerial: device.serial_number,
+    hasIngest: true,
+    lastIngest: {
+      recordedAt: latestReading.recorded_at,
+      temperature: latestReading.temperature,
+      humidity: latestReading.humidity,
+      fanStatus: latestReading.fan_status,
+      acStatus: latestReading.ac_status
+    },
+    secondsSinceLastIngest
+  };
+}

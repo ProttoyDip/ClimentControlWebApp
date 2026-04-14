@@ -18,3 +18,9 @@ export const ingestSensorSchema = z.object({
       path: ["deviceSerial"]
     })
 });
+
+export const sensorStatusBySerialSchema = z.object({
+  params: z.object({
+    deviceSerial: z.string().min(3).max(120)
+  })
+});

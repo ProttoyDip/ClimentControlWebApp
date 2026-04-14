@@ -9,6 +9,7 @@ import { ToggleSwitch } from "../ui/ToggleSwitch";
 
 interface DeviceControlPanelProps {
   devices: Device[];
+  ingestStatusBySerial: Record<string, { hasIngest: boolean; secondsSinceLastIngest: number | null }>;
   targetTemps: Record<number, number>;
   heaterState: Record<number, boolean>;
   onSetTargetTemp: (id: number, value: number) => void;
@@ -18,6 +19,7 @@ interface DeviceControlPanelProps {
 
 export const DeviceControlPanel = memo(function DeviceControlPanel({
   devices,
+  ingestStatusBySerial,
   targetTemps,
   heaterState,
   onSetTargetTemp,
@@ -28,6 +30,18 @@ export const DeviceControlPanel = memo(function DeviceControlPanel({
     <section className="grid gap-3 md:grid-cols-2">
       {devices.map((device) => (
         <GlassCard key={device.id}>
+          {(() => {
+            const status = ingestStatusBySerial[device.serial_number];
+            if (!status) return null;
+
+            return (
+              <div className="mb-2 inline-flex rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[11px] text-subtle">
+                {status.hasIngest && typeof status.secondsSinceLastIngest === "number"
+                  ? `last ingest ${status.secondsSinceLastIngest}s ago`
+                  : "last ingest unavailable"}
+              </div>
+            );
+          })()}
           <div className="mb-3 flex items-start justify-between gap-3">
             <div>
               <h3 className="text-base font-semibold">{device.name}</h3>

@@ -8,6 +8,7 @@ export interface Alert {
   message: string;
   payload_json: string | null;
   created_at: string;
+  created_at_unix: number;
 }
 
 export async function createAlert(payload: {
@@ -27,7 +28,7 @@ export async function createAlert(payload: {
 export async function listAlerts(limit = 100) {
   const safeLimit = Number.isFinite(limit) ? Math.min(Math.max(Math.trunc(limit), 1), 500) : 100;
   const [rows] = await pool.execute<(Alert & RowDataPacket)[]>(
-    `SELECT id, device_id, type, message, payload_json, created_at
+    `SELECT id, device_id, type, message, payload_json, created_at, UNIX_TIMESTAMP(created_at) AS created_at_unix
      FROM alerts
      ORDER BY created_at DESC
      LIMIT ${safeLimit}`

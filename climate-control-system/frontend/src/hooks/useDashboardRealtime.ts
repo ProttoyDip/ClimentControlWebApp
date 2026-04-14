@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../services/api";
 import { connectSocket, getSocket } from "../services/socket";
 import { useDashboardStore } from "../store/dashboardStore";
@@ -23,6 +23,10 @@ function normalizeReading(reading: SensorReading): SensorReading {
 }
 
 export function useDashboardRealtime() {
+  const [ingestStatusBySerial, setIngestStatusBySerial] = useState<
+    Record<string, { hasIngest: boolean; secondsSinceLastIngest: number | null }>
+  >({});
+
   const {
     setDevices,
     setReadings,
@@ -58,6 +62,44 @@ export function useDashboardRealtime() {
   const bufferedReadingsRef = useRef<SensorReading[]>([]);
   const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const syncIngestStatus = useCallback(async (devices: Device[]) => {
+    if (!devices.length) {
+      setIngestStatusBySerial({});
+      return;
+    }
+
+    const statusPairs = await Promise.all(
+      devices.map(async (device) => {
+        try {
+          const response = await api.get(`/sensors/status/${encodeURIComponent(device.serial_number)}`);
+          const data = response.data?.data as {
+            hasIngest?: boolean;
+            secondsSinceLastIngest?: number | null;
+          };
+
+          return [
+            device.serial_number,
+            {
+              hasIngest: Boolean(data?.hasIngest),
+              secondsSinceLastIngest:
+                typeof data?.secondsSinceLastIngest === "number" ? data.secondsSinceLastIngest : null
+            }
+          ] as const;
+        } catch {
+          return [
+            device.serial_number,
+            {
+              hasIngest: false,
+              secondsSinceLastIngest: null
+            }
+          ] as const;
+        }
+      })
+    );
+
+    setIngestStatusBySerial(Object.fromEntries(statusPairs));
+  }, []);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -65,9 +107,11 @@ export function useDashboardRealtime() {
         api.get("/devices"),
         api.get("/sensors/latest?limit=48")
       ]);
-      setDevices(devicesRes.data.data as Device[]);
+      const devices = devicesRes.data.data as Device[];
+      setDevices(devices);
       const normalizedReadings = (readingsRes.data.data as SensorReading[]).map(normalizeReading);
       setReadings(normalizedReadings);
+      await syncIngestStatus(devices);
       setError(null);
     } catch {
       setError("Could not load dashboard data");
@@ -79,7 +123,7 @@ export function useDashboardRealtime() {
     } finally {
       setLoading(false);
     }
-  }, [addAlert, setDevices, setError, setLoading, setReadings]);
+  }, [addAlert, setDevices, setError, setLoading, setReadings, syncIngestStatus]);
 
   /**
    * Replay all queued offline commands to the backend.
@@ -297,6 +341,7 @@ export function useDashboardRealtime() {
 
   return {
     load,
-    controlDevice
+    controlDevice,
+    ingestStatusBySerial
   };
 }

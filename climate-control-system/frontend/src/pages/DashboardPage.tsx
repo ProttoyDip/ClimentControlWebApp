@@ -38,10 +38,10 @@ function clampTarget(value: number) {
 export function DashboardPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [compactMode, setCompactMode] = useState(false);
-  const [notifications, setNotifications] = useState(true);
 
   const {
     theme,
+    notificationsEnabled,
     sidebarCollapsed,
     readings,
     devices,
@@ -52,6 +52,7 @@ export function DashboardPage() {
     heaterState,
     setTheme,
     toggleTheme,
+    setNotificationsEnabled,
     setSidebarCollapsed,
     setTargetTemp,
     setHeaterState,
@@ -59,6 +60,7 @@ export function DashboardPage() {
   } = useDashboardStore(
     useShallow((state) => ({
       theme: state.theme,
+      notificationsEnabled: state.notificationsEnabled,
       sidebarCollapsed: state.sidebarCollapsed,
       readings: state.readings,
       devices: state.devices,
@@ -69,6 +71,7 @@ export function DashboardPage() {
       heaterState: state.heaterState,
       setTheme: state.setTheme,
       toggleTheme: state.toggleTheme,
+      setNotificationsEnabled: state.setNotificationsEnabled,
       setSidebarCollapsed: state.setSidebarCollapsed,
       setTargetTemp: state.setTargetTemp,
       setHeaterState: state.setHeaterState,
@@ -76,7 +79,7 @@ export function DashboardPage() {
     }))
   );
 
-  const { load, controlDevice } = useDashboardRealtime();
+  const { load, controlDevice, ingestStatusBySerial } = useDashboardRealtime();
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -121,7 +124,7 @@ export function DashboardPage() {
 
   return (
     <>
-      {notifications ? <AlertStack /> : null}
+      {notificationsEnabled ? <AlertStack /> : null}
       <AppShell
         sidebarCollapsed={sidebarCollapsed}
         setSidebarCollapsed={setSidebarCollapsed}
@@ -352,6 +355,7 @@ export function DashboardPage() {
               {devices.length ? (
                 <DeviceControlPanel
                   devices={devices}
+                  ingestStatusBySerial={ingestStatusBySerial}
                   targetTemps={targetTemps}
                   heaterState={heaterState}
                   onSetTargetTemp={(id, value) => setTargetTemp(id, clampTarget(value))}
@@ -371,8 +375,8 @@ export function DashboardPage() {
                 <SettingsPanel
                   compactMode={compactMode}
                   onCompactMode={setCompactMode}
-                  notifications={notifications}
-                  onNotifications={setNotifications}
+                  notifications={notificationsEnabled}
+                  onNotifications={setNotificationsEnabled}
                 />
                 <GlassCard>
                   <div className="flex items-center justify-between gap-3">

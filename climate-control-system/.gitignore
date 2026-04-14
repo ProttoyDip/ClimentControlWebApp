@@ -18,6 +18,9 @@ yarn-error.log*
 .env.*
 !.env.example
 
+# ESP32 local config
+**/device_config.h
+
 # IDE
 .vscode/
 .idea/

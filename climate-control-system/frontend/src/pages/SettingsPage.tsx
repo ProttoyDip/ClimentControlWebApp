@@ -13,18 +13,19 @@ import { useShallow } from "zustand/react/shallow";
 
 export function SettingsPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { theme, sidebarCollapsed, toggleTheme, setSidebarCollapsed, targetTemps, setTargetTemp } = useDashboardStore(
+  const { theme, notificationsEnabled, sidebarCollapsed, toggleTheme, setNotificationsEnabled, setSidebarCollapsed, targetTemps, setTargetTemp } = useDashboardStore(
     useShallow((state) => ({
       theme: state.theme,
+      notificationsEnabled: state.notificationsEnabled,
       sidebarCollapsed: state.sidebarCollapsed,
       targetTemps: state.targetTemps,
       toggleTheme: state.toggleTheme,
+      setNotificationsEnabled: state.setNotificationsEnabled,
       setSidebarCollapsed: state.setSidebarCollapsed,
       setTargetTemp: state.setTargetTemp
     }))
   );
 
-  const [notifications, setNotifications] = useState(true);
   const [compact, setCompact] = useState(false);
 
   const baselineTarget = useMemo(() => {
@@ -80,7 +81,7 @@ export function SettingsPage() {
                     <p className="text-sm font-medium">Notifications</p>
                     <p className="text-xs text-subtle">Toast alerts and device warnings</p>
                   </div>
-                  <ToggleSwitch checked={notifications} onChange={setNotifications} />
+                  <ToggleSwitch checked={notificationsEnabled} onChange={setNotificationsEnabled} />
                 </div>
               </div>
               <div className="rounded-2xl border border-emerald-300/20 bg-emerald-300/10 p-4 text-sm text-subtle">

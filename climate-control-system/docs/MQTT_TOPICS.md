@@ -3,9 +3,15 @@
 ## Topic Namespace
 
 - Telemetry publish from devices:
+  climate/sensor/data
+
+- Legacy telemetry publish from devices:
   climate/devices/{serial}/telemetry
 
 - Control command publish from backend:
+  climate/device/control/{serial}
+
+- Legacy control command publish from backend:
   climate/devices/{serial}/commands
 
 - Device heartbeat:
@@ -27,3 +33,4 @@
 - Use retained heartbeat messages with short TTL.
 - Include message timestamp from device clock.
 - Add message signing or TLS client certs for production broker.
+- Keep the topic prefix aligned with `backend/src/services/mqtt.service.ts` and the ESP32 firmware you are flashing.
